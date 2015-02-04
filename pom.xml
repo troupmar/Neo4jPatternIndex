@@ -8,4 +8,110 @@
     <artifactId>Neo4jPatternIndex</artifactId>
     <version>1.0</version>
 
+    <properties>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+
+        <!-- GraphAware Framework -->
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <artifactId>common</artifactId>
+            <version>2.1.6.27</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- optional -->
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <artifactId>api</artifactId>
+            <version>2.1.6.27</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Spring Framework -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>4.1.4.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- optional if you want to use @Transactional -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>4.1.4.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- optional if you want to use GraphAware DatabaseWriter -->
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <artifactId>writer-api</artifactId>
+            <version>2.1.6.27</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <artifactId>writer</artifactId>
+            <version>2.1.6.27</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Neo4j -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j</artifactId>
+            <version>2.1.6</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <artifactId>server-community</artifactId>
+            <version>2.1.6.27</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.graphaware.neo4j</groupId>
+            <version>2.1.6.27</version>
+            <artifactId>tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>4.1.4.RELEASE</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <finalName>${project.name}-all-${project.version}</finalName>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
