@@ -29,7 +29,7 @@ public class NodeCountApi {
         long count;
 
         try (Transaction tx = database.beginTx()) {
-            count = Iterables.count(GlobalGraphOperations.at(database).getAllNodes());
+            count = Iterables.count(GlobalGraphOperations.at(database).getAllRelationships());
             tx.success();
         }
 
