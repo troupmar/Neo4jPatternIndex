@@ -5,6 +5,7 @@ target/
 .idea/
 *.class
 *.iml
+*.txt
 *.iws
 *.ipr
 *.db
