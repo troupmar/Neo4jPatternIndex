@@ -1,5 +1,3 @@
-
-
 import com.graphaware.test.integration.DatabaseIntegrationTest;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -13,7 +11,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 
 /**
  * Created by Martin on 25.03.15.

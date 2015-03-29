@@ -1,7 +1,3 @@
-/**
- * Created by Jaroslav on 3/26/15.
- */
-
 import com.esotericsoftware.minlog.Log;
 import com.graphaware.module.algo.generator.api.GeneratorApi;
 import com.graphaware.test.performance.CacheConfiguration;
