@@ -1,10 +1,11 @@
 import com.esotericsoftware.minlog.Log;
 import com.graphaware.module.algo.generator.api.GeneratorApi;
-import com.graphaware.test.performance.*;
+import com.graphaware.test.performance.CacheConfiguration;
+import com.graphaware.test.performance.CacheParameter;
+import com.graphaware.test.performance.Parameter;
+import com.graphaware.test.performance.PerformanceTest;
 import com.graphaware.test.util.TestUtils;
-import org.neo4j.cypher.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -96,16 +97,13 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
      * {@inheritDoc}
      */
     @Override
-    public long run(GraphDatabaseService database, Map<String, Object> params) {
+    public long run(final GraphDatabaseService database, Map<String, Object> params) {
         long time = 0;
-        StringBuffer dumpBuffer =new StringBuffer();
-        StringLogger dumpLogger = StringLogger.wrap(dumpBuffer);
-        final ExecutionEngine engine = new ExecutionEngine(database, dumpLogger);
 
         time += TestUtils.time(new TestUtils.Timed() {
             @Override
             public void time() {
-                engine.execute("MATCH (a) RETURN count(a) ");
+                database.execute("MATCH (a) RETURN count(a) ");
                 //ExecutionResult result = engine.execute("MATCH (a)--(b)--(c)--(a) RETURN count(a)");
                 //Log.info(result.dumpToString());
             }
