@@ -1,10 +1,10 @@
 import com.esotericsoftware.minlog.Log;
 import com.graphaware.module.algo.generator.api.GeneratorApi;
 import com.graphaware.test.performance.CacheConfiguration;
-import com.graphaware.test.performance.CacheParameter;
 import com.graphaware.test.performance.Parameter;
 import com.graphaware.test.performance.PerformanceTest;
 import com.graphaware.test.util.TestUtils;
+import com.troupmar.graphaware.cache.CacheParameter;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.Collections;
@@ -53,7 +53,7 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 10000 : 100;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 50 : 5;
     }
 
     /**
@@ -79,7 +79,7 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
 
         GeneratorApi generator = new GeneratorApi(database);
-        generator.erdosRenyiSocialNetwork(1000, 5000);
+        generator.erdosRenyiSocialNetwork(100, 500);
         Log.info("Database prepared");
     }
 
@@ -101,7 +101,8 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
         time += TestUtils.time(new TestUtils.Timed() {
             @Override
             public void time() {
-                database.execute("MATCH (a) RETURN count(a) ");
+                database.execute("MATCH (a)--(b)--(c)--(a) RETURN count(a)");
+//                database.execute("MATCH (a) RETURN count(a) ");
                 //ExecutionResult result = engine.execute("MATCH (a)--(b)--(c)--(a) RETURN count(a)");
                 //Log.info(result.dumpToString());
             }
