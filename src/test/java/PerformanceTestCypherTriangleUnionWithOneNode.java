@@ -74,6 +74,11 @@ public class PerformanceTestCypherTriangleUnionWithOneNode implements Performanc
         Log.info("Database prepared");
     }
 
+    @Override
+    public String getExistingDatabasePath() {
+        return null;
+    }
+
     /**
      * {@inheritDoc}
      */

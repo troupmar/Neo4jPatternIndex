@@ -79,10 +79,17 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
      */
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
+        /*
         GeneratorApi generator = new GeneratorApi(database);
         int nodeCount = (int) params.get("nodeCount");
         generator.erdosRenyiSocialNetwork(nodeCount, nodeCount * 4); //*5 fails to satisfy Erdos-Renyi precondition that the number of edges must be < (n*(n-1))/2 when there are 10 nodes
         Log.info("Database prepared");
+        */
+    }
+
+    @Override
+    public String getExistingDatabasePath() {
+        return "/Users/Martin/Skola/CVUT_FIT/Magister/2.2/DIP/neo4j-community-2.2.0-RC01/data/graph.db.zip";
     }
 
     /**

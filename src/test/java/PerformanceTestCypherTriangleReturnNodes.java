@@ -72,6 +72,11 @@ public class PerformanceTestCypherTriangleReturnNodes implements PerformanceTest
         Log.info("Database prepared");
     }
 
+    @Override
+    public String getExistingDatabasePath() {
+        return null;
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -74,6 +74,11 @@ public class PerformanceTestCypherTriangleUnionWithThreeNodes implements Perform
         Log.info("Database prepared");
     }
 
+    @Override
+    public String getExistingDatabasePath() {
+        return null;
+    }
+
     /**
      * {@inheritDoc}
      */
