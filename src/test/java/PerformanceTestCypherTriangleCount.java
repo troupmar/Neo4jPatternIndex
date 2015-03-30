@@ -1,6 +1,7 @@
 import com.esotericsoftware.minlog.Log;
 import com.graphaware.module.algo.generator.api.GeneratorApi;
 import com.graphaware.test.performance.CacheConfiguration;
+import com.graphaware.test.performance.ExponentialParameter;
 import com.graphaware.test.performance.Parameter;
 import com.graphaware.test.performance.PerformanceTest;
 import com.graphaware.test.util.TestUtils;
@@ -45,6 +46,7 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
         result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
+        result.add(new ExponentialParameter("nodeCount", 10, 1, 2, 1)); //10 nodes, then 100
         return result;
     }
 
@@ -77,9 +79,9 @@ public class PerformanceTestCypherTriangleCount implements PerformanceTest {
      */
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
-
         GeneratorApi generator = new GeneratorApi(database);
-        generator.erdosRenyiSocialNetwork(100, 500);
+        int nodeCount = (int) params.get("nodeCount");
+        generator.erdosRenyiSocialNetwork(nodeCount, nodeCount * 4); //*5 fails to satisfy Erdos-Renyi precondition that the number of edges must be < (n*(n-1))/2 when there are 10 nodes
         Log.info("Database prepared");
     }
 
