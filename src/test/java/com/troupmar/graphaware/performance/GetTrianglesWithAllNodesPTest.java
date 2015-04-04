@@ -74,7 +74,7 @@ public class GetTrianglesWithAllNodesPTest implements PerformanceTest {
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
         triangleSet = PerformanceTestHelper
-                .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ppt-only-nodes-original.txt", "only-nodes");
+                .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ptt-only-nodes-original.txt", "only-nodes");
     }
 
     @Override
@@ -128,9 +128,9 @@ public class GetTrianglesWithAllNodesPTest implements PerformanceTest {
         if (writePermission) {
             System.out.println("Saving results to file...");
             try {
-                PerformanceTestHelper.saveTriangleResultToFile("ppt-all-nodes-opt.txt", optResults);
+                PerformanceTestHelper.saveTriangleResultToFile("ptt-all-nodes-opt.txt", optResults);
 
-                PerformanceTestHelper.saveTriangleSetResultToFile("ppt-all-nodes-opt-reduced.txt",
+                PerformanceTestHelper.saveTriangleSetResultToFile("ptt-all-nodes-opt-reduced.txt",
                         PerformanceTestHelper.triangleResultToTriangleSet(optResults));
 
                 writePermission = false;

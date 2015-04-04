@@ -92,7 +92,7 @@ public class GetTrianglesWithSingleNodePTest implements PerformanceTest {
 
         triangleSet = PerformanceTestHelper.getTriangleSetFromDatabase(database, "only-nodes");
          //triangleSet = PerformanceTestHelper
-           //     .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ppt-only-nodes-original.txt", "only-nodes");
+           //     .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ptt-only-nodes-original.txt", "only-nodes");
     }
 
     @Override
@@ -152,9 +152,9 @@ public class GetTrianglesWithSingleNodePTest implements PerformanceTest {
         if (writePermission) {
             System.out.println("Saving results to file...");
             try {
-                PerformanceTestHelper.saveTriangleResultToFile("ppt-single-node-opt.txt", optResults);
+                PerformanceTestHelper.saveTriangleResultToFile("ptt-single-node-opt.txt", optResults);
 
-                PerformanceTestHelper.saveTriangleSetResultToFile("ppt-single-node-opt-reduced.txt",
+                PerformanceTestHelper.saveTriangleSetResultToFile("ptt-single-node-opt-reduced.txt",
                         PerformanceTestHelper.triangleResultToTriangleSet(optResults));
 
                 writePermission = false;

@@ -66,9 +66,9 @@ public class PerformanceTestHelper {
                         }
                     }
                     if (type.equals("only-nodes")) {
-                        saveTriangleSetResultToFile("ppt-single-node-original-reduced.txt", triangleSet);
+                        saveTriangleSetResultToFile("ptt-only-nodes-original-reduced.txt", triangleSet);
                     } else if (type.equals("")) {
-                        saveTriangleSetResultToFile("ppt-all-original-reduced.txt", triangleSet);
+                        saveTriangleSetResultToFile("ptt-all-original-reduced.txt", triangleSet);
                     }
                     return triangleSet;
                 } catch (Exception e) {
@@ -120,11 +120,11 @@ public class PerformanceTestHelper {
             }
 
             if (type.equals("only-nodes")) {
-                saveTriangleResultToFile("ppt-only-nodes-original.txt", resultToPrint);
-                saveTriangleSetResultToFile("ppt-only-nodes-reduced.txt", triangleSet);
+                saveTriangleResultToFile("ptt-only-nodes-original.txt", resultToPrint);
+                saveTriangleSetResultToFile("ptt-only-nodes-original-reduced.txt", triangleSet);
             } else if (type.equals("")) {
-                saveTriangleResultToFile("ppt-all-original.txt", resultToPrint);
-                saveTriangleSetResultToFile("ppt-all-reduced.txt", triangleSet);
+                saveTriangleResultToFile("ptt-all-original.txt", resultToPrint);
+                saveTriangleSetResultToFile("ptt-all-original-reduced.txt", triangleSet);
             }
 
             return triangleSet;

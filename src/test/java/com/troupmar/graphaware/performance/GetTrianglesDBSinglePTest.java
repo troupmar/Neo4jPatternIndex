@@ -78,7 +78,7 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
         //triangleSet = PerformanceTestHelper.getTriangleSetFromDatabase(database, "");
         triangleSet = PerformanceTestHelper
-                .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ppt-all-original.txt", "");
+                .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ptt-all-original.txt", "");
     }
 
 
@@ -183,9 +183,9 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
                 if (writePermission) {
                     System.out.println("Saving results to file...");
                     try {
-                        PerformanceTestHelper.saveTriangleResultToFile("ppt-db-single-opt.txt", optResults);
+                        PerformanceTestHelper.saveTriangleResultToFile("ptt-db-single-opt.txt", optResults);
 
-                        PerformanceTestHelper.saveTriangleSetResultToFile("ppt-db-single-opt-reduced.txt",
+                        PerformanceTestHelper.saveTriangleSetResultToFile("ptt-db-single-opt-reduced.txt",
                                 PerformanceTestHelper.triangleResultToTriangleSet(optResults));
 
                         writePermission = false;
