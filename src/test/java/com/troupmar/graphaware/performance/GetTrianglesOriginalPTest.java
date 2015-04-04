@@ -1,3 +1,5 @@
+package com.troupmar.graphaware.performance;
+
 import com.esotericsoftware.minlog.Log;
 import com.graphaware.module.algo.generator.api.GeneratorApi;
 import com.graphaware.test.performance.CacheConfiguration;
@@ -5,28 +7,26 @@ import com.graphaware.test.performance.CacheParameter;
 import com.graphaware.test.performance.Parameter;
 import com.graphaware.test.performance.PerformanceTest;
 import com.graphaware.test.util.TestUtils;
-import org.neo4j.cypher.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class PerformanceTestCypherTriangleUnionWithOneNode implements PerformanceTest {
+public class GetTrianglesOriginalPTest implements PerformanceTest {
 
     /**
      * {@inheritDoc}
      */
     @Override
     public String shortName() {
-        return "return triangle by one node";
+        return "triangle return nodes";
     }
 
     @Override
     public String longName() {
-        return "Cypher query for get triengle, than I know node";
+        return "Cypher query for get nodes of all triangles";
     }
 
     /**
@@ -91,12 +91,13 @@ public class PerformanceTestCypherTriangleUnionWithOneNode implements Performanc
      * {@inheritDoc}
      */
     @Override
-    public long run(GraphDatabaseService database, Map<String, Object> params) {
+    public long run(final GraphDatabaseService database, Map<String, Object> params) {
         long time = 0;
+
         time += TestUtils.time(new TestUtils.Timed() {
             @Override
             public void time() {
-               //getDatabase().execute("MATCH (a)--(b)--(c)--(a) RETURN a,b,c");
+                database.execute("MATCH (a)--(b)--(c)--(a) RETURN id(a), id(b), id(c)");
             }
         });
 

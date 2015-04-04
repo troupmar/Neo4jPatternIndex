@@ -1,3 +1,5 @@
+package com.troupmar.graphaware.unit;
+
 import com.graphaware.test.integration.DatabaseIntegrationTest;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -15,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Martin on 25.03.15.
  */
-public class GraphDatabaseServiceTest extends DatabaseIntegrationTest {
+public class GraphDatabaseServiceExecuteTest extends DatabaseIntegrationTest {
     @Test
     public void shouldBeAbleToDetectCreatedTriangle() {
         final AtomicBoolean triangle = new AtomicBoolean(false);
