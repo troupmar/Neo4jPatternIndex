@@ -10,7 +10,8 @@ import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -20,7 +21,7 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
 
     private TemporaryFolder temporaryFolder;
     private GraphDatabaseService temporaryDatabase;
-    Set<String> triangleSet;
+    SortedSet<String> triangleSet;
     private boolean writePermission = true;
     private List<Map<String, Object>> optResults;
 
@@ -29,12 +30,13 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "triangle count";
+        return "GetTrianglesDBSinglePTest";
     }
 
     @Override
     public String longName() {
-        return "Cypher query for get count of triangles";
+        return "Optimalization to get all triangles with external database," +
+                "where single triangles are copied and queried.";
     }
 
     /**
@@ -76,9 +78,9 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
      */
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
-        //triangleSet = PerformanceTestHelper.getTriangleSetFromDatabase(database, "");
-        triangleSet = PerformanceTestHelper
-                .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ptt-all-original.txt", "");
+        triangleSet = PerformanceTestHelper.getTriangleSetFromDatabase(database, "");
+        //triangleSet = PerformanceTestHelper
+          //      .getTriangleSetFromFile("/Users/Martin/git/Neo4jPatternIndex/ptt-all-original.txt", "");
     }
 
 
@@ -175,7 +177,7 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
                         PerformanceTestHelper.prepareResults(result, optResults);
                     }
                     //System.out.println(result.resultAsString());
-
+                    temporaryDatabase.execute("START n=node(*) MATCH n-[r]-() DELETE n, r");
                     //result = temporaryDatabase.execute("MATCH (n) RETURN count(n)");
                     //System.out.println(result.resultAsString());
                 }
@@ -194,7 +196,7 @@ public class GetTrianglesDBSinglePTest implements PerformanceTest {
                     }
                 }
 
-                temporaryDatabase.execute("START n=node(*) MATCH n-[r]-() DELETE n, r");
+
                 closeDatabase();
             }
         });

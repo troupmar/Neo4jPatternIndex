@@ -45,12 +45,12 @@ public class PerformanceTestHelper {
      * @return unique triangleSet with sorted-concatenated keys, that represent individual triangles.
      */
     // TODO review
-    public static Set<String> getTriangleSetFromFile(String absPath, String type) {
+    public static SortedSet<String> getTriangleSetFromFile(String absPath, String type) {
         try {
             try (BufferedReader br = new BufferedReader(new FileReader(absPath))) {
                 String line;
                 try {
-                    Set<String> triangleSet = new HashSet<String>();
+                    SortedSet<String> triangleSet = new TreeSet<String>();
 
                     br.readLine();
                     br.readLine();
@@ -58,7 +58,7 @@ public class PerformanceTestHelper {
                     while ((line = br.readLine()) != null) {
                         String[] parts = line.substring(1, line.length() - 1).split("\\|");
                         if (type.equals("only-nodes")) {
-                            triangleSet.add(getKeyToTriangleSet(Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2])));
+                            triangleSet.add(getKeyToTriangleSet(parts[0], parts[1], parts[2]));
                         } else if (type.equals("")) {
                             triangleSet.add(getKeyToTriangleSet(parts));
                         } else {
@@ -88,7 +88,7 @@ public class PerformanceTestHelper {
      * @return unique triangleSet with sorted-concatenated keys, that represent individual triangles.
      */
     // TODO review
-    public static Set<String> getTriangleSetFromDatabase(GraphDatabaseService database, String type) {
+    public static SortedSet<String> getTriangleSetFromDatabase(GraphDatabaseService database, String type) {
         try {
             Result result;
             if (type.equals("only-nodes")) {
@@ -102,7 +102,7 @@ public class PerformanceTestHelper {
             List<Map<String, Object>> resultToPrint = new ArrayList<Map<String, Object>>();
 
             Map<String, Object> row = new HashMap<String, Object>();
-            Set<String> triangleSet = new HashSet<String>();
+            SortedSet<String> triangleSet = new TreeSet<String>();
 
             while (result.hasNext()) {
                 row = result.next();

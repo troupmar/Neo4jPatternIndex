@@ -21,12 +21,12 @@ public class GetTrianglesOriginalPTest implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "triangle return nodes";
+        return "GetTrianglesOriginalPTest";
     }
 
     @Override
     public String longName() {
-        return "Cypher query for get nodes of all triangles";
+        return "Original cypher query to get all triangles.";
     }
 
     /**

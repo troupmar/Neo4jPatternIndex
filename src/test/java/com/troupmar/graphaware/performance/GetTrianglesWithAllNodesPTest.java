@@ -16,7 +16,7 @@ import java.util.*;
  */
 public class GetTrianglesWithAllNodesPTest implements PerformanceTest {
 
-    Set<String> triangleSet = new HashSet<>();
+    SortedSet<String> triangleSet = new TreeSet<>();
     private List<Map<String, Object>> optResults;
     private boolean writePermission = true;
     String query;
@@ -26,12 +26,13 @@ public class GetTrianglesWithAllNodesPTest implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "triangle count";
+        return "GetTrianglesWithAllNodesPTest";
     }
 
     @Override
     public String longName() {
-        return "Cypher query for get count of triangles";
+        return "Optimalization to get all triangles with querying on all 3 defined ids" +
+                "(permutation on subgraph).";
     }
 
     /**

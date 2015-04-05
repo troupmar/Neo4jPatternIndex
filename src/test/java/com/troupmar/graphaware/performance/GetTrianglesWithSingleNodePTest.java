@@ -26,7 +26,7 @@ public class GetTrianglesWithSingleNodePTest implements PerformanceTest {
     *
     */
 
-    private Set<String> triangleSet;
+    private SortedSet<String> triangleSet;
     private List<Map<String, Object>> optResults;
     private boolean writePermission = true;
 
