@@ -4,6 +4,7 @@ import com.graphaware.runtime.module.BaseTxDrivenModule;
 import com.graphaware.runtime.module.DeliberateTransactionRollbackException;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 
 import java.io.*;
@@ -43,5 +44,11 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public void start(GraphDatabaseService database) {
+        //loadIndexRoots();
+        //super.start(database);
     }
 }

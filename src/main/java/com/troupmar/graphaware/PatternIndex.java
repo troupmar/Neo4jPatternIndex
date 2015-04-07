@@ -11,12 +11,13 @@ public class PatternIndex {
 
     private String patternName;
     private String patternQuery;
+    private Node rootNode;
     private int numOfUnits;
-    private List<Node> units;
 
-    public PatternIndex(String patternName, String patternQuery) {
-        this.patternName = patternName;
-        this.patternQuery = patternQuery;
+    public PatternIndex(String patternQuery, String patternName, Node rootNode) {
+        this.rootNode = rootNode;
+        this.patternQuery = rootNode.getProperty("patternQuery").toString();
+        this.patternName = rootNode.getProperty("patternName").toString();
     }
 
     public String getPatternName() {
@@ -35,6 +36,14 @@ public class PatternIndex {
         this.patternQuery = patternQuery;
     }
 
+    public Node getRootNode() {
+        return rootNode;
+    }
+
+    public void setRootNode(Node rootNode) {
+        this.rootNode = rootNode;
+    }
+
     public int getNumOfUnits() {
         return numOfUnits;
     }
@@ -43,12 +52,5 @@ public class PatternIndex {
         this.numOfUnits = numOfUnits;
     }
 
-    public List<Node> getUnits() {
-        return units;
-    }
-
-    public void setUnits(List<Node> units) {
-        this.units = units;
-    }
 
 }
