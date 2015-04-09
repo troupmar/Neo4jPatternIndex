@@ -14,10 +14,11 @@ public class PatternIndex {
     private Node rootNode;
     private int numOfUnits;
 
-    public PatternIndex(String patternQuery, String patternName, Node rootNode) {
+    public PatternIndex(String patternQuery, String patternName, Node rootNode, int numOfUnits) {
+        this.patternQuery = patternQuery;
+        this.patternName = patternName;
         this.rootNode = rootNode;
-        this.patternQuery = rootNode.getProperty("patternQuery").toString();
-        this.patternName = rootNode.getProperty("patternName").toString();
+        this.numOfUnits = numOfUnits;
     }
 
     public String getPatternName() {

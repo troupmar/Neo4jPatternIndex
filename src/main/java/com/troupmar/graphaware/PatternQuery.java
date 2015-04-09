@@ -3,6 +3,7 @@ package com.troupmar.graphaware;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Transaction;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -24,6 +25,7 @@ public class PatternQuery {
     public PatternQuery(String patternQuery, GraphDatabaseService database) throws InvalidCypherMatchException {
         nodeNames = new LinkedHashSet<String>();
         relNames = new LinkedHashSet<String>();
+
         if (! validatePatternQuery(patternQuery, database) || ! checkValidRelationships(patternQuery)) {
             throw new InvalidCypherMatchException();
         }
@@ -33,12 +35,20 @@ public class PatternQuery {
     }
 
     private boolean validatePatternQuery(String cypherMatch, GraphDatabaseService database) {
+        // TODO EXPLAIN opens and does not close transaction? Why?
+        boolean valid;
+        Transaction tx = database.beginTx();
         try {
             database.execute("EXPLAIN MATCH " + cypherMatch + " RETURN count(*)");
-            return true;
-        } catch (QueryExecutionException e) {
-            return false;
+            valid = true;
+            tx.success();
+        } catch (RuntimeException e) {
+            valid = false;
+            tx.failure();
+        } finally {
+            tx.close();
         }
+        return valid;
     }
 
     private boolean checkValidRelationships(String patternQuery) {

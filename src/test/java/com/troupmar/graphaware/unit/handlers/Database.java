@@ -17,16 +17,36 @@ public class Database {
     private GraphDatabaseService database;
     private TemporaryFolder temporaryFolder;
 
-    public Database(String dbOriginPath) {
-        loadDatabaseFromFile(dbOriginPath);
+    public Database(String dbPath, String dbLoadProcess) {
+        if (dbLoadProcess.equals("zip-still")) {
+            loadDatabaseFromZipFile(dbPath);
+        } else if (dbLoadProcess.equals("zip-tmp")) {
+            loadTemporaryDatabaseFromZipFile(dbPath);
+        } else if (dbLoadProcess.equals("still")) {
+            loadDatabaseFromFile(dbPath);
+        }
     }
 
-    private void loadDatabaseFromFile(String dbOriginPath) {
+    private void loadDatabaseFromFile(String dbPath) {
+        String databasePath = new File(dbPath).getAbsolutePath();
+        createDatabase(databasePath);
+    }
+
+    private void loadDatabaseFromZipFile(String zipDbPath) {
+        String databasePath = new File(unzipDatabase("data", zipDbPath)).getAbsolutePath();
+        String databaseFile = new File(zipDbPath).getName().replace(".zip", "");
+        createDatabase(databasePath + "/" + databaseFile);
+    }
+
+    private void loadTemporaryDatabaseFromZipFile(String zipDbPath) {
         createTemporaryFolder();
-        String databasePath = unzipDatabase(temporaryFolder, dbOriginPath);
-        String databaseFile = new File(dbOriginPath).getName();
-        databaseFile = databaseFile.replace(".zip", "");
-        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(databasePath + "/" + databaseFile);
+        String databasePath = unzipDatabase(temporaryFolder, zipDbPath);
+        String databaseFile = new File(zipDbPath).getName().replace(".zip", "");
+        createDatabase(databasePath + "/" + databaseFile);
+    }
+
+    private void createDatabase(String databaseTargetPath) {
+        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(databaseTargetPath);
         database = graphDatabaseBuilder.newGraphDatabase();
     }
 
@@ -39,6 +59,18 @@ public class Database {
         }
 
         return tmp.getRoot().getAbsolutePath();
+    }
+
+    private String unzipDatabase(String targetLocation, String zipLocation) {
+
+        try {
+            ZipFile zipFile = new ZipFile(zipLocation);
+            zipFile.extractAll(targetLocation);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return targetLocation;
     }
 
     /**
@@ -62,7 +94,9 @@ public class Database {
             Log.info("Closing database...");
 
             database.shutdown();
-            temporaryFolder.delete();
+            if (temporaryFolder != null) {
+                temporaryFolder.delete();
+            }
             database = null;
         }
     }

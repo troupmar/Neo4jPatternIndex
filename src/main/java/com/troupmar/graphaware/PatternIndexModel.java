@@ -1,9 +1,6 @@
 package com.troupmar.graphaware;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 
 import java.util.*;
 
@@ -15,111 +12,170 @@ public class PatternIndexModel {
     private static Object mutex = new Object();
 
     private GraphDatabaseService database;
-    //private List<Node> patternIndexRoots;
     private List<PatternIndex> patternIndexes;
 
-    private PatternIndexModel(GraphDatabaseService database) {
+    public PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
-        //loadIndexRoots();
+        loadIndexRoots();
     }
 
     public static PatternIndexModel getInstance(GraphDatabaseService database) {
-        if(instance==null) {
+        if(instance == null) {
             synchronized (mutex) {
-                if (instance==null) {
-                    instance= new PatternIndexModel(database);
+                if (instance == null) {
+                    instance = new PatternIndexModel(database);
                 }
             }
         }
         return instance;
     }
 
-    public void buildNewIndex(PatternQuery patternQuery, String patternName) {
-        String query = "MATCH " + patternQuery.getPatternQuery() + " RETURN ";
-        for (String node : patternQuery.getNodeNames()) {
-            query += "id(" + node + "), ";
-        }
-        for (String rel : patternQuery.getRelNames()) {
-            query += "id(" + rel + "), ";
-        }
-        query = query.substring(0, query.length() - 2);
+    private void loadIndexRoots() {
+        patternIndexes = new ArrayList<PatternIndex>();
 
-        buildIndex(database.execute(query), patternQuery, patternName);
-    }
-
-    // TODO review - move variable inits from inside of cycle
-    private void buildIndex(Result patternUnits, PatternQuery patternQuery, String patternName) {
-        if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
-            Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName);
-
-            int numOfUnits = 0;
-            Set<String> indexedPatternUnits = new HashSet<String>();
-            while (patternUnits.hasNext()) {
-                Map<String, Object> patternUnit = patternUnits.next();
-                Object [] nodeIDs = getPatternNodeIDs(patternUnit, patternQuery);
-                String key = getPatternUnitKey(nodeIDs);
-                if (! indexedPatternUnits.contains(key)) {
-                    Node patternUnitNode = createNewUnitNode();
-                    patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
-                    for (Object nodeID : nodeIDs) {
-                        patternUnitNode.createRelationshipTo(database.getNodeById((Long) nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
-                    }
-                    numOfUnits++;
-                    indexedPatternUnits.add(key);
-                }
-            }
-            PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode);
-            // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
-            patternIndexes.add(patternIndex);
-        } else {
-            // TODO throw exception - pattern index already exists
-        }
-    }
-
-    private Node createNewUnitNode() {
+        ResourceIterator<Node> rootNodes = null;
         Transaction tx = database.beginTx();
         try {
-            Node node = database.createNode();
-            node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
+            rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
             tx.success();
-            return node;
         } catch (RuntimeException e) {
             // TODO Log exception and handle return
             tx.failure();
-            return null;
+        } finally {
+            tx.close();
+        }
+
+        Node rootNode;
+
+        while (rootNodes.hasNext()) {
+            rootNode = rootNodes.next();
+            PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
+                    rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
+            patternIndexes.add(patternIndex);
+            tx.success();
+
         }
     }
 
-    private Node createNewRootNode(String patternQuery, String patternName) {
-        // TODO should this be in transaction?
+    public void buildNewIndex(PatternQuery patternQuery, String patternName) {
+        if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
+            String query = "MATCH " + patternQuery.getPatternQuery() + " RETURN ";
+            for (String node : patternQuery.getNodeNames()) {
+                query += "id(" + node + "), ";
+            }
+            /*
+            for (String rel : patternQuery.getRelNames()) {
+                query += "id(" + rel + "), ";
+            }
+            */
+            query = query.substring(0, query.length() - 2);
+
+            Result result = database.execute(query);
+            buildIndex(getPatternUnits(result, patternQuery), patternQuery, patternName);
+        } else {
+            // TODO inform that index already exists
+        }
+    }
+
+    // TODO review - move variable inits from inside of cycle
+    private void buildIndex(List<Object[]> patternUnits, PatternQuery patternQuery, String patternName) {
+        Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName, patternUnits.size());
+        Node patternUnitNode;
+
+        Transaction tx;
+        for (Object[] patternUnit : patternUnits) {
+            patternUnitNode = createNewUnitNode();
+            tx = database.beginTx();
+            try {
+                patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
+                tx.success();
+            } catch (RuntimeException e) {
+                tx.failure();
+            } finally {
+                tx.close();
+            }
+            for (Object nodeID : patternUnit) {
+                tx = database.beginTx();
+                try {
+                    patternUnitNode.createRelationshipTo(database.getNodeById((Long) nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
+                    tx.success();
+                } catch (RuntimeException e) {
+                    tx.failure();
+                } finally {
+                    tx.close();
+                }
+            }
+        }
+        PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode, patternUnits.size());
+        // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
+        patternIndexes.add(patternIndex);
+
+    }
+
+    public Node createNewUnitNode() {
+        Node node = null;
         Transaction tx = database.beginTx();
         try {
-            Node node = database.createNode();
+            node = database.createNode();
+            node.addLabel(NodeLabels._META_);
+            node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+        return node;
+    }
+
+    private Node createNewRootNode(String patternQuery, String patternName, int numOfUnits) {
+        Node node = null;
+        Transaction tx = database.beginTx();
+        try {
+            node = database.createNode();
             node.addLabel(NodeLabels._META_);
             node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
             node.setProperty("patternQuery", patternQuery);
             node.setProperty("patternName", patternName);
+            node.setProperty("numOfUnits", numOfUnits);
             tx.success();
-            return node;
         } catch (RuntimeException e) {
             // TODO Log exception and handle return
             tx.failure();
-            return null;
+        } finally {
+            tx.close();
         }
+        return node;
     }
 
     // TODO - check if pattern index already exists must be robust!
     private boolean patternIndexExists(String patternQuery, String patternName) {
         for (PatternIndex patternIndex : patternIndexes) {
-            if (patternIndex.getPatternName().equals(patternName) || patternIndex.getPatternQuery().equals(patternQuery)) {
+            if (patternIndex.getPatternQuery().equals(patternQuery) || patternIndex.getPatternName().equals(patternName)) {
                 return true;
             }
         }
         return false;
     }
 
-    private Object[] getPatternNodeIDs(Map<String, Object> patternUnit, PatternQuery patternQuery) {
-        Object [] nodes = new Object[patternQuery.getNodeNames().size()];
+    private List<Object[]> getPatternUnits(Result result, PatternQuery patternQuery) {
+        List patternUnits = new ArrayList<Object[]>();
+        Set<String> uniquePatternUnitKeys = new HashSet<String>();
+        String key;
+        while (result.hasNext()) {
+            Object[] patternUnit = getPatternUnitIDs(result.next(), patternQuery);
+            key = getPatternUnitKey(patternUnit);
+            if (! uniquePatternUnitKeys.contains(key)) {
+                patternUnits.add(patternUnit);
+                uniquePatternUnitKeys.add(key);
+            }
+        }
+        return patternUnits;
+    }
+
+    private Object[] getPatternUnitIDs(Map<String, Object> patternUnit, PatternQuery patternQuery) {
+        Object[] nodes = new Object[patternQuery.getNodeNames().size()];
         int i = 0;
         for (String nodeName : patternQuery.getNodeNames()) {
             nodes[i++] = patternUnit.get("id(" + nodeName + ")");
@@ -127,7 +183,7 @@ public class PatternIndexModel {
         return nodes;
     }
 
-    private String getPatternUnitKey(Object [] nodes) {
+    private String getPatternUnitKey(Object[] nodes) {
         // BE AWARE that I am editing nodes array sent in parameter!
         Arrays.sort(nodes);
         String key = "";

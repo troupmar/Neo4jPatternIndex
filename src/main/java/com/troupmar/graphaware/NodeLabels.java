@@ -10,5 +10,4 @@ public enum NodeLabels implements Label {
     PATTERN_INDEX_ROOT,
     PATTERN_INDEX_UNIT,
 
-
 }
