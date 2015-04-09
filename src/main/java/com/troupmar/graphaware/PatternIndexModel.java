@@ -35,25 +35,23 @@ public class PatternIndexModel {
 
         ResourceIterator<Node> rootNodes = null;
         Transaction tx = database.beginTx();
+        // TODO should transaction be big or couple small ones?
         try {
             rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
+
+            Node rootNode;
+            while (rootNodes.hasNext()) {
+                rootNode = rootNodes.next();
+                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
+                        rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
+                patternIndexes.add(patternIndex);
+            }
             tx.success();
         } catch (RuntimeException e) {
             // TODO Log exception and handle return
             tx.failure();
         } finally {
             tx.close();
-        }
-
-        Node rootNode;
-
-        while (rootNodes.hasNext()) {
-            rootNode = rootNodes.next();
-            PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
-                    rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
-            patternIndexes.add(patternIndex);
-            tx.success();
-
         }
     }
 
@@ -82,28 +80,13 @@ public class PatternIndexModel {
         Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName, patternUnits.size());
         Node patternUnitNode;
 
-        Transaction tx;
         for (Object[] patternUnit : patternUnits) {
             patternUnitNode = createNewUnitNode();
-            tx = database.beginTx();
-            try {
-                patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
-                tx.success();
-            } catch (RuntimeException e) {
-                tx.failure();
-            } finally {
-                tx.close();
-            }
+            createRelationship(patternRootNode, patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
+
             for (Object nodeID : patternUnit) {
-                tx = database.beginTx();
-                try {
-                    patternUnitNode.createRelationshipTo(database.getNodeById((Long) nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
-                    tx.success();
-                } catch (RuntimeException e) {
-                    tx.failure();
-                } finally {
-                    tx.close();
-                }
+                //patternUnitNode.createRelationshipTo(database.getNodeById((Long) nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
+                createRelationship(patternUnitNode, (Long) nodeID, RelationshipTypes.PATTERN_INDEX_RELATION);
             }
         }
         PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode, patternUnits.size());
@@ -112,7 +95,33 @@ public class PatternIndexModel {
 
     }
 
-    public Node createNewUnitNode() {
+    private void createRelationship(Node from, Long toID, RelationshipType relType) {
+        Transaction tx = database.beginTx();
+        try {
+            from.createRelationshipTo(database.getNodeById(toID), relType);
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+    }
+
+    private void createRelationship(Node from, Node to, RelationshipType relType) {
+        Transaction tx = database.beginTx();
+        try {
+            from.createRelationshipTo(to, relType);
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+    }
+
+    private Node createNewUnitNode() {
         Node node = null;
         Transaction tx = database.beginTx();
         try {

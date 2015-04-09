@@ -34,7 +34,6 @@ public class CypherParserTest {
         PatternIndexModel model = PatternIndexModel.getInstance(database.getDatabase());
 
         PatternQuery patternQuery = new PatternQuery(cypher, database.getDatabase());
-        //Node node = model.createNewUnitNode();
         model.buildNewIndex(patternQuery, "triangle-index");
 
         database.closeDatabase();

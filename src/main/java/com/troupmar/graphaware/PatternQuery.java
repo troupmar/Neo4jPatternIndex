@@ -29,13 +29,12 @@ public class PatternQuery {
         if (! validatePatternQuery(patternQuery, database) || ! checkValidRelationships(patternQuery)) {
             throw new InvalidCypherMatchException();
         }
-        checkValidRelationships(patternQuery);
         getNamesFromCypherMatch(patternQuery);
         this.patternQuery = patternQuery.trim();
     }
 
     private boolean validatePatternQuery(String cypherMatch, GraphDatabaseService database) {
-        // TODO EXPLAIN opens and does not close transaction? Why?
+        // TODO EXPLAIN needs to be in transaction, why?
         boolean valid;
         Transaction tx = database.beginTx();
         try {
@@ -51,6 +50,7 @@ public class PatternQuery {
         return valid;
     }
 
+    // In case I need relationships - if I dont need them - I can allow -- and <-- and -->
     private boolean checkValidRelationships(String patternQuery) {
         Pattern pattern = Pattern.compile(NO_NAME_REL_PATTERN);
         Matcher matcher = pattern.matcher(patternQuery);
