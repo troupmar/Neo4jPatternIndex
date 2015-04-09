@@ -57,18 +57,18 @@ public class PatternIndexModel {
 
     public void buildNewIndex(PatternQuery patternQuery, String patternName) {
         if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
-            String query = "MATCH " + patternQuery.getPatternQuery() + " RETURN ";
+            String query = "MATCH " + patternQuery.getPatternQuery() + " WHERE ";
+
+            String returnStatement = "";
             for (String node : patternQuery.getNodeNames()) {
-                query += "id(" + node + "), ";
+                query += "NOT " + node + ":_META_ AND ";
+                returnStatement += "id(" + node + "), ";
             }
-            /*
-            for (String rel : patternQuery.getRelNames()) {
-                query += "id(" + rel + "), ";
-            }
-            */
-            query = query.substring(0, query.length() - 2);
+
+            query = query.substring(0, query.length() - 5) + " RETURN " + returnStatement.substring(0, returnStatement.length() - 2);
 
             Result result = database.execute(query);
+            System.out.println("Execution of original query finished!");
             buildIndex(getPatternUnits(result, patternQuery), patternQuery, patternName);
         } else {
             // TODO inform that index already exists
@@ -77,6 +77,7 @@ public class PatternIndexModel {
 
     // TODO review - move variable inits from inside of cycle
     private void buildIndex(List<Object[]> patternUnits, PatternQuery patternQuery, String patternName) {
+        System.out.println(patternUnits.size());
         Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName, patternUnits.size());
         Node patternUnitNode;
 
