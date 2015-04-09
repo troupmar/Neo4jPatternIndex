@@ -1,5 +1,6 @@
 package com.troupmar.graphaware;
 
+import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -16,13 +17,14 @@ public class CypherQuery extends QueryParser {
     private static final String PATTERN_QUERY_PART  = "MATCH([\\S\\s]*?)(WHERE|RETURN)";
 
     private String cypherQuery;
+    private int insertPosition;
 
-    public CypherQuery(String cypherQuery, GraphDatabaseService database) throws InvalidCypherMatchException {
+    public CypherQuery(String cypherQuery, GraphDatabaseService database) throws InvalidCypherException, InvalidCypherMatchException {
         nodeNames = new LinkedHashSet<String>();
         relNames = new LinkedHashSet<String>();
 
         if (! validateQuery(cypherQuery, database)) {
-            throw new InvalidCypherMatchException();
+            throw new InvalidCypherException();
         }
 
         setNamesFromCypher(cypherQuery);
@@ -47,14 +49,22 @@ public class CypherQuery extends QueryParser {
         return valid;
     }
 
-    private void setNamesFromCypher(String cypherQuery) throws InvalidCypherMatchException {
+    private void setNamesFromCypher(String cypherQuery) throws InvalidCypherException, InvalidCypherMatchException {
         Pattern pattern = Pattern.compile(PATTERN_QUERY_PART, Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(cypherQuery);
 
         if (matcher.find()) {
+            if (matcher.group(2).trim().equalsIgnoreCase("WHERE")) {
+                // Removing first WHERE from user's query
+                String leftSubstr  = cypherQuery.substring(0, matcher.start(2));
+                String rightSubstr = cypherQuery.substring(matcher.end(2), cypherQuery.length());
+                this.cypherQuery = leftSubstr + rightSubstr;
+            }
+            insertPosition = matcher.start(2);
             setNamesFromCypherMatch(matcher.group(1));
         }
     }
+
 
     public String getCypherQuery() {
         return cypherQuery;

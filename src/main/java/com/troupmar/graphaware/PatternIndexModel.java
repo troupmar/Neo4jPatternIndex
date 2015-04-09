@@ -1,5 +1,6 @@
 package com.troupmar.graphaware;
 
+import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
@@ -12,7 +13,7 @@ public class PatternIndexModel {
     private static Object mutex = new Object();
 
     private GraphDatabaseService database;
-    private List<PatternIndex> patternIndexes;
+    private Map<String, PatternIndex> patternIndexes;
 
     public PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
@@ -31,7 +32,7 @@ public class PatternIndexModel {
     }
 
     private void loadIndexRoots() {
-        patternIndexes = new ArrayList<PatternIndex>();
+        patternIndexes = new HashMap<String, PatternIndex>();
 
         ResourceIterator<Node> rootNodes = null;
         Transaction tx = database.beginTx();
@@ -44,7 +45,8 @@ public class PatternIndexModel {
                 rootNode = rootNodes.next();
                 PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
                         rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
-                patternIndexes.add(patternIndex);
+                patternIndexes.put(patternIndex.getPatternName(), patternIndex);
+                //patternIndexes.add(patternIndex);
             }
             tx.success();
         } catch (RuntimeException e) {
@@ -54,6 +56,40 @@ public class PatternIndexModel {
             tx.close();
         }
     }
+    // TODO
+    /*
+    public void getResultFromIndex(CypherQuery cypherQuery, String patternName) throws PatternIndexNotFoundException {
+        if (! patternIndexes.containsKey(patternName)) {
+            throw new PatternIndexNotFoundException();
+        }
+        HashSet<Map<String, Object>> results = new HashSet<Map<String, Object>>();
+        HashSet<Long> queriedNodeIDs = new HashSet<Long>();
+
+        Node rootNode = patternIndexes.get(patternName).getRootNode();
+        Iterable<Relationship> relsToUnits = rootNode.getRelationships(Direction.OUTGOING);
+
+        Node unitNode;
+        Iterable<Relationship> relsToNodes;
+        for (Relationship rel : relsToUnits) {
+            unitNode = rel.getEndNode();
+            relsToNodes = unitNode.getRelationships(Direction.OUTGOING);
+            addSingleUnitResult(cypherQuery, relsToNodes.iterator().next().getEndNode().getId(), results, queriedNodeIDs);
+
+        }
+    }
+
+    private void addSingleUnitResult(CypherQuery cypherQuery, Long nodeToQueryID, HashSet<Map<String, Object>> results, HashSet<Long> queriedNodeIDs) {
+        String condition = "WHERE ";
+        if (! queriedNodeIDs.contains(nodeToQueryID)) {
+
+        }
+    }
+
+
+    private String buildQuery(CypherQuery cypherQuery, Long nodeToQueryID) {
+
+    }
+    */
 
     public void buildNewIndex(PatternQuery patternQuery, String patternName) {
         if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
@@ -92,7 +128,8 @@ public class PatternIndexModel {
         }
         PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode, patternUnits.size());
         // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
-        patternIndexes.add(patternIndex);
+        patternIndexes.put(patternIndex.getPatternName(), patternIndex);
+        //patternIndexes.add(patternIndex);
 
     }
 
@@ -161,7 +198,7 @@ public class PatternIndexModel {
 
     // TODO - check if pattern index already exists must be robust!
     private boolean patternIndexExists(String patternQuery, String patternName) {
-        for (PatternIndex patternIndex : patternIndexes) {
+        for (PatternIndex patternIndex : patternIndexes.values()) {
             if (patternIndex.getPatternQuery().equals(patternQuery) || patternIndex.getPatternName().equals(patternName)) {
                 return true;
             }
@@ -169,6 +206,7 @@ public class PatternIndexModel {
         return false;
     }
 
+    // TODO optimize!
     private List<Object[]> getPatternUnits(Result result, PatternQuery patternQuery) {
         List patternUnits = new ArrayList<Object[]>();
         Set<String> uniquePatternUnitKeys = new HashSet<String>();
