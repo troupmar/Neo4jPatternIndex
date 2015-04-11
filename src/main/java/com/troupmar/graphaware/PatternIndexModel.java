@@ -111,7 +111,6 @@ public class PatternIndexModel {
         }
     }
 
-    // TODO review - move variable inits from inside of cycle
     private void buildIndex(List<Object[]> patternUnits, PatternQuery patternQuery, String patternName) {
         System.out.println(patternUnits.size());
         Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName, patternUnits.size());
@@ -122,15 +121,12 @@ public class PatternIndexModel {
             createRelationship(patternRootNode, patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
 
             for (Object nodeID : patternUnit) {
-                //patternUnitNode.createRelationshipTo(database.getNodeById((Long) nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
                 createRelationship(patternUnitNode, (Long) nodeID, RelationshipTypes.PATTERN_INDEX_RELATION);
             }
         }
         PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode, patternUnits.size());
         // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
         patternIndexes.put(patternIndex.getPatternName(), patternIndex);
-        //patternIndexes.add(patternIndex);
-
     }
 
     private void createRelationship(Node from, Long toID, RelationshipType relType) {

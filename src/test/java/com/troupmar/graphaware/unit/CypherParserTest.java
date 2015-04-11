@@ -20,15 +20,15 @@ public class CypherParserTest {
 
     @Test
     public void checkNodePattern() throws InvalidCypherMatchException, InvalidCypherException {
-        //Database database = new Database(DB_ZIP_PATH, "zip-still");
-        Database database = new Database(DB_PATH, "still");
+        Database database = new Database(DB_ZIP_PATH, "zip-still");
+        //Database database = new Database(DB_PATH, "still");
         Result result = database.getDatabase().execute("MATCH (n) RETURN COUNT(*)");
         System.out.println(result.resultAsString());
 
         //String cypher = "  (   a)-[r]-(bla {name: 'trik'} )-[ff]- (aa:Person)-[pp:Person]-(a), (kk),   (j),(l:Person)  ";
 
-        //String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
-        String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) WHERE id(b)=1 RETURN a, b, c";
+        //String cypherMatch = "(a)-[r]-(b)-[p]-(c)--(a)";
+         String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) WHERE id(b)=1 RETURN a, b, c";
 
         CypherQuery cypherQuery = new CypherQuery(query, database.getDatabase());
 

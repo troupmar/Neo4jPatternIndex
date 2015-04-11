@@ -3,6 +3,9 @@ package com.troupmar.graphaware;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,26 +18,48 @@ public abstract class QueryParser {
     protected static final String NO_NAME_REL_PATTERN = "(<?-->?)";
 
     protected Set<String> nodeNames;
-    protected Set<String> relNames;
+    protected Map<String, String []> relNames;
 
     protected abstract boolean validateQuery(String cypherQuery, GraphDatabaseService database);
 
-    protected void setNamesFromCypherMatch(String patternQuery) throws InvalidCypherMatchException {
-        Pattern pattern = Pattern.compile(NODE_REL_PATTERN);
+    protected boolean checkValidRelationships(String patternQuery) {
+        Pattern pattern = Pattern.compile(NO_NAME_REL_PATTERN);
         Matcher matcher = pattern.matcher(patternQuery);
 
+        if (matcher.find()) {
+            return false;
+        }
+        return true;
+    }
+
+    protected void setNamesFromCypherMatch(String patternQuery) throws InvalidCypherMatchException {
+        List<String> parsedVars = getParsedCypherMatch(patternQuery);
+
         String item;
-        while (matcher.find()) {
-            item = matcher.group();
-            item = item.replaceAll("\\s+", " ").trim();
+        for (int i=0; i<parsedVars.size(); i++) {
+            item = parsedVars.get(i).replaceAll("\\s+", " ").trim();
             if (item.charAt(0) == '(') {
                 nodeNames.add(getVarName(item));
             } else if (item.charAt(0) == '[') {
-                relNames.add(getVarName(item));
+                String[] surroundNodes = new String[2];
+                surroundNodes[0] = getVarName(parsedVars.get(i-1).replaceAll("\\s+", " ").trim());
+                surroundNodes[1] = getVarName(parsedVars.get(i+1).replaceAll("\\s+", " ").trim());
+                relNames.put(getVarName(item), surroundNodes);
             } else {
                 nodeNames.add(getVarName(item));
             }
         }
+    }
+
+    private List<String> getParsedCypherMatch(String patternQuery) {
+        Pattern pattern = Pattern.compile(NODE_REL_PATTERN);
+        Matcher matcher = pattern.matcher(patternQuery);
+
+        List<String> matches = new ArrayList<String>();
+        while (matcher.find()) {
+            matches.add(matcher.group(1));
+        }
+        return matches;
     }
 
     protected String getVarName(String item) throws InvalidCypherMatchException {
@@ -60,7 +85,7 @@ public abstract class QueryParser {
         return nodeNames;
     }
 
-    public Set<String> getRelNames() {
+    public Map<String, String[]> getRelNames() {
         return relNames;
     }
 }

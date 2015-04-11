@@ -6,6 +6,6 @@ package com.troupmar.graphaware.exception;
 public class InvalidCypherMatchException extends Exception {
     public InvalidCypherMatchException() {
         super("Cypher MATCH clause of query does not fill its requirements. " +
-                "It has to be in valid cypher format and all nodes and relationships need to have name defined");
+                "It has to be in valid cypher format and all nodes and relationships names must be defined.");
     }
 }
