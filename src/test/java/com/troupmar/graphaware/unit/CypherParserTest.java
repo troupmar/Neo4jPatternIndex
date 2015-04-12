@@ -27,6 +27,7 @@ public class CypherParserTest {
 
     @Test
     public void checkNodePattern() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
+
         // just to prove database is loaded ...
         //Database database = new Database(DB_ZIP_PATH, "zip-still");
         Database database = new Database(DB_PATH, "still");
