@@ -14,16 +14,13 @@ import java.util.regex.Pattern;
  * Created by Martin on 09.04.15.
  */
 public abstract class QueryParser {
-    protected static final String NODE_REL_PATTERN    = "([^->,][^-<,]+)";
-    protected static final String NO_NAME_REL_PATTERN = "(<?-->?)";
-
     protected Set<String> nodeNames;
     protected Map<String, String []> relNames;
 
-    protected abstract boolean validateQuery(String cypherQuery, GraphDatabaseService database);
+    protected abstract boolean isQueryValid(String cypherQuery, GraphDatabaseService database);
 
-    protected boolean checkValidRelationships(String patternQuery) {
-        Pattern pattern = Pattern.compile(NO_NAME_REL_PATTERN);
+    protected boolean hasValidRelationships(String patternQuery) {
+        Pattern pattern = Pattern.compile("(<?-->?)");
         Matcher matcher = pattern.matcher(patternQuery);
 
         if (matcher.find()) {
@@ -42,8 +39,8 @@ public abstract class QueryParser {
                 nodeNames.add(getVarName(item));
             } else if (item.charAt(0) == '[') {
                 String[] surroundNodes = new String[2];
-                surroundNodes[0] = getVarName(parsedVars.get(i-1).replaceAll("\\s+", " ").trim());
-                surroundNodes[1] = getVarName(parsedVars.get(i+1).replaceAll("\\s+", " ").trim());
+                surroundNodes[0] = getVarName(parsedVars.get(i - 1).replaceAll("\\s+", " ").trim());
+                surroundNodes[1] = getVarName(parsedVars.get(i + 1).replaceAll("\\s+", " ").trim());
                 relNames.put(getVarName(item), surroundNodes);
             } else {
                 nodeNames.add(getVarName(item));
@@ -52,7 +49,7 @@ public abstract class QueryParser {
     }
 
     private List<String> getParsedCypherMatch(String patternQuery) {
-        Pattern pattern = Pattern.compile(NODE_REL_PATTERN);
+        Pattern pattern = Pattern.compile("([^->,][^-<,]+)");
         Matcher matcher = pattern.matcher(patternQuery);
 
         List<String> matches = new ArrayList<String>();

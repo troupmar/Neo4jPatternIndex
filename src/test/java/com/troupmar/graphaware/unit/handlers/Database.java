@@ -92,7 +92,6 @@ public class Database {
     public void closeDatabase() {
         if (database != null) {
             Log.info("Closing database...");
-
             database.shutdown();
             if (temporaryFolder != null) {
                 temporaryFolder.delete();

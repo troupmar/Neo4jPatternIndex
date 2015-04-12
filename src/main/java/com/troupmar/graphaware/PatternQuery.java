@@ -18,7 +18,7 @@ public class PatternQuery extends QueryParser {
         nodeNames = new LinkedHashSet<String>();
         relNames  = new LinkedHashMap<String, String[]>();
 
-        if (! validateQuery(patternQuery, database) || ! checkValidRelationships(patternQuery)) {
+        if (! isQueryValid(patternQuery, database) || ! hasValidRelationships(patternQuery)) {
             throw new InvalidCypherMatchException();
         }
 
@@ -27,7 +27,7 @@ public class PatternQuery extends QueryParser {
     }
 
     @Override
-    protected boolean validateQuery(String cypherQuery, GraphDatabaseService database) {
+    protected boolean isQueryValid(String cypherQuery, GraphDatabaseService database) {
         // TODO EXPLAIN needs to be in transaction, why?
         boolean valid;
         Transaction tx = database.beginTx();

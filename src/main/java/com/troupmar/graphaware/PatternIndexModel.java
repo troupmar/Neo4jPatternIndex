@@ -17,7 +17,7 @@ public class PatternIndexModel {
 
     public PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
-        loadIndexRoots();
+        this.patternIndexes = DatabaseHandler.getPatternIndexRoots(database);
     }
 
     public static PatternIndexModel getInstance(GraphDatabaseService database) {
@@ -31,34 +31,10 @@ public class PatternIndexModel {
         return instance;
     }
 
-    private void loadIndexRoots() {
-        patternIndexes = new HashMap<String, PatternIndex>();
+    public HashSet<Map<String, Object>> getResultFromIndex(CypherQuery cypherQuery, String patternName) throws PatternIndexNotFoundException {
+        // time
+        long totalTime = System.nanoTime();
 
-        ResourceIterator<Node> rootNodes = null;
-        Transaction tx = database.beginTx();
-        // TODO should transaction be big or couple small ones?
-        try {
-            rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
-
-            Node rootNode;
-            while (rootNodes.hasNext()) {
-                rootNode = rootNodes.next();
-                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
-                        rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
-                patternIndexes.put(patternIndex.getPatternName(), patternIndex);
-                //patternIndexes.add(patternIndex);
-            }
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-    // TODO
-    /*
-    public void getResultFromIndex(CypherQuery cypherQuery, String patternName) throws PatternIndexNotFoundException {
         if (! patternIndexes.containsKey(patternName)) {
             throw new PatternIndexNotFoundException();
         }
@@ -66,30 +42,67 @@ public class PatternIndexModel {
         HashSet<Long> queriedNodeIDs = new HashSet<Long>();
 
         Node rootNode = patternIndexes.get(patternName).getRootNode();
-        Iterable<Relationship> relsToUnits = rootNode.getRelationships(Direction.OUTGOING);
+        Iterable<Relationship> relsToUnits = DatabaseHandler.getRelationships(database, rootNode, Direction.OUTGOING);
 
         Node unitNode;
+        Long nodeToQueryID;
         Iterable<Relationship> relsToNodes;
+        Transaction tx = database.beginTx();
+
+        // time
+        long queryTime = 0;
+        long time;
+
         for (Relationship rel : relsToUnits) {
             unitNode = rel.getEndNode();
-            relsToNodes = unitNode.getRelationships(Direction.OUTGOING);
-            addSingleUnitResult(cypherQuery, relsToNodes.iterator().next().getEndNode().getId(), results, queriedNodeIDs);
+            relsToNodes = DatabaseHandler.getRelationships(database, unitNode, Direction.OUTGOING);
+            nodeToQueryID = relsToNodes.iterator().next().getEndNode().getId();
+            if (! queriedNodeIDs.contains(nodeToQueryID)) {
+                // time
+                time = System.nanoTime();
 
+                addSingleUnitResult(cypherQuery, nodeToQueryID, results);
+                // time
+                time = System.nanoTime() - time;
+                queryTime += time;
+
+                queriedNodeIDs.add(nodeToQueryID);
+            }
         }
+
+        // time
+        totalTime = System.nanoTime() - totalTime;
+        System.out.println("Time of total elapsed: " + totalTime);
+        System.out.println("Time of query elapsed: " + queryTime);
+
+        return results;
     }
 
-    private void addSingleUnitResult(CypherQuery cypherQuery, Long nodeToQueryID, HashSet<Map<String, Object>> results, HashSet<Long> queriedNodeIDs) {
-        String condition = "WHERE ";
-        if (! queriedNodeIDs.contains(nodeToQueryID)) {
-
+    public void addSingleUnitResult(CypherQuery cypherQuery, Long nodeToQueryID, HashSet<Map<String, Object>> results) {
+        String query = "";
+        for (String nodeName : cypherQuery.getNodeNames()) {
+            query += cypherQuery.getCypherQuery().substring(0, cypherQuery.getInsertPosition());
+            query += buildWhereCondition(cypherQuery, nodeName, nodeToQueryID);
+            query += cypherQuery.getCypherQuery().substring(cypherQuery.getInsertPosition(), cypherQuery.getCypherQuery().length());
+            query += " UNION ";
         }
+        query = query.substring(0, query.length() - 7);
+        Result result = database.execute(query);
+        while (result.hasNext()) {
+            results.add(result.next());
+        }
+
     }
 
-
-    private String buildQuery(CypherQuery cypherQuery, Long nodeToQueryID) {
-
+    private String buildWhereCondition(CypherQuery cypherQuery, String nodeToQueryName, Long nodeToQueryID) {
+        String condition = " WHERE ";
+        condition += "id(" + nodeToQueryName + ")=" + nodeToQueryID + " ";
+        for (String nodeName : cypherQuery.getNodeNames()) {
+            condition += "AND NOT " + nodeName + ":_META_ ";
+        }
+        return condition;
     }
-    */
+
 
     public void buildNewIndex(PatternQuery patternQuery, String patternName) {
         if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
@@ -113,83 +126,20 @@ public class PatternIndexModel {
 
     private void buildIndex(List<Object[]> patternUnits, PatternQuery patternQuery, String patternName) {
         System.out.println(patternUnits.size());
-        Node patternRootNode = createNewRootNode(patternQuery.getPatternQuery(), patternName, patternUnits.size());
+        Node patternRootNode = DatabaseHandler.createNewRootNode(database, patternQuery.getPatternQuery(), patternName, patternUnits.size());
         Node patternUnitNode;
 
         for (Object[] patternUnit : patternUnits) {
-            patternUnitNode = createNewUnitNode();
-            createRelationship(patternRootNode, patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
+            patternUnitNode = DatabaseHandler.createNewUnitNode(database);
+            DatabaseHandler.createRelationship(database, patternRootNode, patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
 
             for (Object nodeID : patternUnit) {
-                createRelationship(patternUnitNode, (Long) nodeID, RelationshipTypes.PATTERN_INDEX_RELATION);
+                DatabaseHandler.createRelationship(database, patternUnitNode, (Long) nodeID, RelationshipTypes.PATTERN_INDEX_RELATION);
             }
         }
         PatternIndex patternIndex = new PatternIndex(patternQuery.getPatternQuery(), patternName, patternRootNode, patternUnits.size());
         // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
         patternIndexes.put(patternIndex.getPatternName(), patternIndex);
-    }
-
-    private void createRelationship(Node from, Long toID, RelationshipType relType) {
-        Transaction tx = database.beginTx();
-        try {
-            from.createRelationshipTo(database.getNodeById(toID), relType);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-
-    private void createRelationship(Node from, Node to, RelationshipType relType) {
-        Transaction tx = database.beginTx();
-        try {
-            from.createRelationshipTo(to, relType);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-
-    private Node createNewUnitNode() {
-        Node node = null;
-        Transaction tx = database.beginTx();
-        try {
-            node = database.createNode();
-            node.addLabel(NodeLabels._META_);
-            node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-        return node;
-    }
-
-    private Node createNewRootNode(String patternQuery, String patternName, int numOfUnits) {
-        Node node = null;
-        Transaction tx = database.beginTx();
-        try {
-            node = database.createNode();
-            node.addLabel(NodeLabels._META_);
-            node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
-            node.setProperty("patternQuery", patternQuery);
-            node.setProperty("patternName", patternName);
-            node.setProperty("numOfUnits", numOfUnits);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-        return node;
     }
 
     // TODO - check if pattern index already exists must be robust!
@@ -235,6 +185,14 @@ public class PatternIndexModel {
             key += node + "_";
         }
         return key.substring(0, key.length() - 1);
+    }
+
+    public void printResult(HashSet<Map<String, Object>> results) {
+        System.out.println("Total of " + results.size() + " results:");
+        Iterator itr = results.iterator();
+        while (itr.hasNext()) {
+            System.out.println(itr.next().toString());
+        }
     }
 
 }

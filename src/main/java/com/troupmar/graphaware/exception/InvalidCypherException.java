@@ -6,6 +6,7 @@ package com.troupmar.graphaware.exception;
 public class InvalidCypherException extends Exception {
     public InvalidCypherException() {
         super("Cypher query does not fill its requirements. " +
-                "It has to be in valid cypher format and all nodes and relationships names must be defined.");
+                "It has to be in valid cypher format and all nodes and relationships names must be defined. " +
+                "Also IDs of nodes cannot be queried.");
     }
 }
