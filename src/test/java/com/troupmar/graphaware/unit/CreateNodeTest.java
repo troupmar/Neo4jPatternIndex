@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Martin on 05.04.15.
  */
+/*
 public class CreateNodeTest {
 
     private static final String DB_PATH     = "data/graph5-8.db";
@@ -57,3 +58,4 @@ public class CreateNodeTest {
         return node;
     }
 }
+*/

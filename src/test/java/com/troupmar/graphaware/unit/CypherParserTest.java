@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Martin on 05.04.15.
  */
+/*
 public class CypherParserTest {
 
     private static final String DB_PATH     = "data/graph5-8.db";
@@ -27,10 +28,9 @@ public class CypherParserTest {
 
     @Test
     public void checkNodePattern() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
-
         // just to prove database is loaded ...
-        //Database database = new Database(DB_ZIP_PATH, "zip-still");
-        Database database = new Database(DB_PATH, "still");
+        Database database = new Database(DB_ZIP_PATH, "zip-still");
+        //Database database = new Database(DB_PATH, "still");
         Result result = database.getDatabase().execute("MATCH (n) RETURN COUNT(*)");
         System.out.println(result.resultAsString());
 
@@ -51,5 +51,5 @@ public class CypherParserTest {
         database.closeDatabase();
 
     }
-
 }
+*/

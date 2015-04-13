@@ -13,6 +13,6 @@ public class TransactionHandleBootstrapper implements RuntimeModuleBootstrapper 
 
     @Override
     public RuntimeModule bootstrapModule(String moduleId, Map<String, String> config, GraphDatabaseService database) {
-        return new TransactionHandleModule(moduleId);
+        return new TransactionHandleModule(moduleId, database);
     }
 }

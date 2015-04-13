@@ -15,6 +15,7 @@ public class PatternIndexModel {
     private GraphDatabaseService database;
     private Map<String, PatternIndex> patternIndexes;
 
+    /* Pattern index model init */
     public PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
         this.patternIndexes = DatabaseHandler.getPatternIndexRoots(database);
@@ -31,6 +32,7 @@ public class PatternIndexModel {
         return instance;
     }
 
+    /* Query on top of the index */
     public HashSet<Map<String, Object>> getResultFromIndex(CypherQuery cypherQuery, String patternName) throws PatternIndexNotFoundException {
         // time
         long totalTime = System.nanoTime();
@@ -103,7 +105,7 @@ public class PatternIndexModel {
         return condition;
     }
 
-
+    /* Building index */
     public void buildNewIndex(PatternQuery patternQuery, String patternName) {
         if (! patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
             String query = "MATCH " + patternQuery.getPatternQuery() + " WHERE ";

@@ -12,6 +12,7 @@ import java.util.Map;
 /**
  * Created by Martin on 08.04.15.
  */
+/*
 public class ResultAfterCreateTest {
     private static final String DB_PATH     = "data/graph5-8.db";
     private static final String DB_ZIP_PATH = DB_PATH + ".zip";
@@ -41,6 +42,6 @@ public class ResultAfterCreateTest {
         System.out.println(result.resultAsString());
 
         database.closeDatabase();
-
     }
 }
+*/

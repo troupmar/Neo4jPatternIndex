@@ -113,4 +113,60 @@ public class DatabaseHandler {
         }
         return relationships;
     }
+
+    public static Iterable<Relationship> getRelationshipsByLabel(GraphDatabaseService database, Node node, Direction dir, RelationshipTypes label) {
+        Iterable<Relationship> relationships = null;
+        Transaction tx = database.beginTx();
+        try {
+            relationships = node.getRelationships(dir, label);
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+        return relationships;
+    }
+
+    public static Node getNodeById(GraphDatabaseService database, Long nodeID) {
+        Node node = null;
+        Transaction tx = database.beginTx();
+        try {
+            node = database.getNodeById(nodeID);
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+        return node;
+    }
+
+    public static void deleteNode(GraphDatabaseService database, Node node) {
+        Transaction tx = database.beginTx();
+        try {
+            node.delete();
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+    }
+
+    public static void deleteRelationship(GraphDatabaseService database, Relationship relationship) {
+        Transaction tx = database.beginTx();
+        try {
+            relationship.delete();
+            tx.success();
+        } catch (RuntimeException e) {
+            // TODO Log exception and handle return
+            tx.failure();
+        } finally {
+            tx.close();
+        }
+    }
 }
