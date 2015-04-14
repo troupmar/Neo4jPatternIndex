@@ -189,6 +189,14 @@ public class PatternIndexModel {
         return key.substring(0, key.length() - 1);
     }
 
+    public Map<String, PatternIndex> getPatternIndexes() {
+        return patternIndexes;
+    }
+
+    public void removePatternIndex(String patternIndexName) {
+        patternIndexes.remove(patternIndexName);
+    }
+
     public void printResult(HashSet<Map<String, Object>> results) {
         System.out.println("Total of " + results.size() + " results:");
         Iterator itr = results.iterator();
