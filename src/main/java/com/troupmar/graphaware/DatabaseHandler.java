@@ -2,6 +2,7 @@ package com.troupmar.graphaware;
 
 import org.neo4j.graphdb.*;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,15 +54,16 @@ public class DatabaseHandler {
         return node;
     }
 
-    public static Node createNewRootNode(GraphDatabaseService database, String patternQuery, String patternName, int numOfUnits) {
+    public static Node createNewRootNode(GraphDatabaseService database, PatternQuery patternQuery, String patternName, int numOfUnits) {
         Node node = null;
         Transaction tx = database.beginTx();
         try {
             node = database.createNode();
             node.addLabel(NodeLabels._META_);
             node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
-            node.setProperty("patternQuery", patternQuery);
             node.setProperty("patternName", patternName);
+            node.setProperty("patternQuery", patternQuery.getPatternQuery());
+            node.setProperty("relsWithNames", QueryParser.relsWithNodesToString(patternQuery.getRelsWithNodes()));
             node.setProperty("numOfUnits", numOfUnits);
             tx.success();
         } catch (RuntimeException e) {
@@ -85,8 +87,9 @@ public class DatabaseHandler {
             Node rootNode;
             while (rootNodes.hasNext()) {
                 rootNode = rootNodes.next();
-                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternQuery").toString(),
-                        rootNode.getProperty("patternName").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"));
+                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
+                        rootNode.getProperty("patternQuery").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"),
+                        QueryParser.getRelsWithNodesFromString(rootNode.getProperty("relsWithNames").toString()));
                 patternIndexes.put(patternIndex.getPatternName(), patternIndex);
             }
             tx.success();

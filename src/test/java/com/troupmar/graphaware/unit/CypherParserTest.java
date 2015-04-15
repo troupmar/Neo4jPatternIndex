@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Martin on 05.04.15.
  */
+
 /*
 public class CypherParserTest {
 

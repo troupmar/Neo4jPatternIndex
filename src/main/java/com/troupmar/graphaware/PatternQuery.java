@@ -15,8 +15,8 @@ public class PatternQuery extends QueryParser {
     private String patternQuery;
 
     public PatternQuery(String patternQuery, GraphDatabaseService database) throws InvalidCypherMatchException {
-        nodeNames = new LinkedHashSet<String>();
-        relNames  = new LinkedHashMap<String, String[]>();
+        nodeNames      = new LinkedHashSet<String>();
+        relsWithNodes  = new LinkedHashMap<String, String[]>();
 
         if (! isQueryValid(patternQuery, database) || ! hasValidRelationships(patternQuery)) {
             throw new InvalidCypherMatchException();

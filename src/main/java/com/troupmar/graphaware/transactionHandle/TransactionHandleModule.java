@@ -16,6 +16,7 @@ import java.util.Map;
 /**
  * Created by Martin on 11.03.15.
  */
+
 public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
 
     private GraphDatabaseService database;
@@ -42,77 +43,13 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
             fileWritter = new FileWriter(file.getName(), true);
             BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
 
-            // get all deleted relationships
-            Collection<Relationship> deletedRels = improvedTransactionData.getAllDeletedRelationships();
-            // get all deleted nodes
-            Collection<Node> deletedNodes = improvedTransactionData.getAllDeletedNodes();
-            // store deleted meta relationships within this program block
-            HashSet<Long> deletedMetaRels = new HashSet<Long>();
-            // store non-meta relationships, that are incident with deleted nodes
-            HashSet<Long> deletedNodeSet = new HashSet<Long>();
+            // handle deleted nodes and relationships
+            patternIndexModel.handleDelete(improvedTransactionData.getAllDeletedNodes(), improvedTransactionData.getAllDeletedRelationships());
+            // after delete was handled - check and delete index if it has no units
+            patternIndexModel.deleteEmptyIndexes();
 
-            // get IDs of all deleted nodes
-            for (Node deletedNode : deletedNodes) {
-                deletedNodeSet.add(deletedNode.getId());
-            }
-
-            // go over all deleted relationships
-            for (Relationship deletedRel : deletedRels) {
-                // if relationship to delete is of META type and was not deleted yet by this program block
-                if (deletedRel.isType(RelationshipTypes.PATTERN_INDEX_RELATION) && ! deletedMetaRels.contains(deletedRel.getId())) {
-                    bufferWritter.write("Block of pattern relationship.\n");
-                    // get pattern unit node
-                    Node unitNode = deletedRel.getStartNode();
-                    // get all unit node relationships
-                    Iterable<Relationship> unitNodeRels = unitNode.getRelationships();
-                    // delete all unit node relationships and store those to deleted meta relationships within this program block
-                    for (Relationship unitNodeRel : unitNodeRels) {
-                        deletedMetaRels.add(unitNodeRel.getId());
-                        DatabaseHandler.deleteRelationship(database, unitNodeRel);
-                    }
-                    // delete unit node itself
-                    DatabaseHandler.deleteNode(database, unitNode);
-                // if relationship to delete is not of META type
-                } else {
-                    bufferWritter.write("Block of classic relationship.\n");
-                    // get nodes of the relationship to delete
-                    Long startNodeID = deletedRel.getStartNode().getId();
-                    Long endNodeID = deletedRel.getEndNode().getId();
-                    // if relationship is not between nodes, where at least one of them was deleted in this transaction
-                    if (! deletedNodeSet.contains(startNodeID) && ! deletedNodeSet.contains(endNodeID)) {
-                        bufferWritter.write("Processing classic relationship.\n");
-                        // get all META node IDs, that have relationships to both nodes of the relationship to delete
-                        Result result = database.execute("MATCH (a)--(b)--(c) WHERE id(a)=" + startNodeID +
-                                " AND id(c)=" + endNodeID + " AND b:_META_ RETURN id(b)");
-                        // for each of these META node IDs
-                        while (result.hasNext()) {
-                            // get the actual META node - pattern unit node
-                            Node unitNode = DatabaseHandler.getNodeById(database, (Long) result.next().get("id(b)"));
-                            // get all relationships of this unit node
-                            Iterable<Relationship> unitNodeRels = DatabaseHandler.getRelationships(database, unitNode, Direction.BOTH);
-                            // delete tall ynit node relationships
-                            for (Relationship unitNodeRel : unitNodeRels) {
-                                DatabaseHandler.deleteRelationship(database, unitNodeRel);
-                            }
-                            // delete unit node itself
-                            DatabaseHandler.deleteNode(database, unitNode);
-                        }
-                    }
-                }
-            }
-
-            // get all existing pattern indexes
-            Map<String, PatternIndex> patternIndexes = patternIndexModel.getPatternIndexes();
-            // loop over pattern indexes
-            for (Map.Entry<String, PatternIndex> entry : patternIndexes.entrySet()) {
-                // if root node of pattern index does not have any relationships
-                if (! entry.getValue().getRootNode().getRelationships(Direction.OUTGOING).iterator().hasNext()) {
-                    // remove pattern index
-                    patternIndexModel.removePatternIndex(entry.getKey());
-                    // delete root node
-                    DatabaseHandler.deleteNode(database, entry.getValue().getRootNode());
-                }
-            }
+            // handle created nodes and relationships
+            patternIndexModel.handleCreate(improvedTransactionData.getAllCreatedRelationships());
 
 
             bufferWritter.close();
@@ -122,6 +59,8 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
 
         return null;
     }
+
+
 
 
     @Override

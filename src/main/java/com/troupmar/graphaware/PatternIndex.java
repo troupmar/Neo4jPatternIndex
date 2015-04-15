@@ -3,6 +3,7 @@ package com.troupmar.graphaware;
 import org.neo4j.graphdb.Node;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Martin on 05.04.15.
@@ -11,12 +12,15 @@ public class PatternIndex {
 
     private String patternName;
     private String patternQuery;
+    private Map<String, String[]> relsWithNodes;
     private Node rootNode;
     private int numOfUnits;
 
-    public PatternIndex(String patternQuery, String patternName, Node rootNode, int numOfUnits) {
-        this.patternQuery = patternQuery;
+
+    public PatternIndex(String patternName, String patternQuery, Node rootNode, int numOfUnits, Map<String, String[]> relsWithNodes) {
         this.patternName = patternName;
+        this.patternQuery = patternQuery;
+        this.relsWithNodes = relsWithNodes;
         this.rootNode = rootNode;
         this.numOfUnits = numOfUnits;
     }
@@ -25,24 +29,12 @@ public class PatternIndex {
         return patternName;
     }
 
-    public void setPatternName(String patternName) {
-        this.patternName = patternName;
-    }
-
     public String getPatternQuery() {
         return patternQuery;
     }
 
-    public void setPatternQuery(String patternQuery) {
-        this.patternQuery = patternQuery;
-    }
-
     public Node getRootNode() {
         return rootNode;
-    }
-
-    public void setRootNode(Node rootNode) {
-        this.rootNode = rootNode;
     }
 
     public int getNumOfUnits() {
@@ -53,5 +45,7 @@ public class PatternIndex {
         this.numOfUnits = numOfUnits;
     }
 
-
+    public Map<String, String[]> getRelsWithNodes() {
+        return relsWithNodes;
+    }
 }

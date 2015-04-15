@@ -18,8 +18,8 @@ public class CypherQuery extends QueryParser {
     private int insertPosition;
 
     public CypherQuery(String cypherQuery, GraphDatabaseService database) throws InvalidCypherException, InvalidCypherMatchException {
-        nodeNames = new LinkedHashSet<String>();
-        relNames  = new LinkedHashMap<String, String[]>();
+        nodeNames        = new LinkedHashSet<String>();
+        relsWithNodes    = new LinkedHashMap<String, String[]>();
         this.cypherQuery = cypherQuery;
 
         if (! isQueryValid(cypherQuery, database) || ! hasValidRelationships(cypherQuery) || nodeIDsQueried(cypherQuery)) {
