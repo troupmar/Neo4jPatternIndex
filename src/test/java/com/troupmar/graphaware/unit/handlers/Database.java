@@ -14,6 +14,10 @@ import java.io.IOException;
  * Created by Martin on 06.04.15.
  */
 public class Database {
+
+    public static final String DB_PATH     = "data/graph1-1.db";
+    public static final String DB_ZIP_PATH = DB_PATH + ".zip";
+
     private GraphDatabaseService database;
     private TemporaryFolder temporaryFolder;
 

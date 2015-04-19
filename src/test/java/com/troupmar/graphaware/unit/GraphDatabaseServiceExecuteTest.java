@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Martin on 25.03.15.
  */
-/*
+
 public class GraphDatabaseServiceExecuteTest extends DatabaseIntegrationTest {
     @Test
     public void shouldBeAbleToDetectCreatedTriangle() {
@@ -88,4 +88,4 @@ public class GraphDatabaseServiceExecuteTest extends DatabaseIntegrationTest {
         assertTrue(triangle.get());
     }
 }
-*/
+

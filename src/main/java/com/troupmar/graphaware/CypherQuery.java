@@ -22,7 +22,8 @@ public class CypherQuery extends QueryParser {
         relsWithNodes    = new LinkedHashMap<String, String[]>();
         this.cypherQuery = cypherQuery;
 
-        if (! isQueryValid(cypherQuery, database) || ! hasValidRelationships(cypherQuery) || nodeIDsQueried(cypherQuery)) {
+        validateQuery(cypherQuery, database);
+        if (! hasValidRelationships(cypherQuery)) {
             throw new InvalidCypherException();
         }
         setNamesFromCypher(cypherQuery);
@@ -33,35 +34,31 @@ public class CypherQuery extends QueryParser {
     }
 
     protected boolean nodeIDsQueried(String patternQuery) {
-        Pattern pattern = Pattern.compile("id\\((.*?)\\)");
+        Pattern pattern = Pattern.compile("WHERE(.*)RETURN", Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(patternQuery);
 
+        if (! matcher.find()) {
+            return false;
+        }
+        String whereCondition = matcher.group(1);
+
+        pattern = Pattern.compile("id\\((.*?)\\)");
+        matcher = pattern.matcher(whereCondition);
+
         while (matcher.find()) {
-            for (String nodeName : nodeNames) {
-                if (matcher.group(1).equals(nodeName)) {
-                    return true;
-                }
+            if (nodeNames.contains(matcher.group(1))) {
+                return true;
             }
         }
         return false;
     }
 
     @Override
-    protected boolean isQueryValid(String cypherQuery, GraphDatabaseService database) {
-        // TODO EXPLAIN needs to be in transaction, why?
-        boolean valid;
-        Transaction tx = database.beginTx();
-        try {
+    protected void validateQuery(String cypherQuery, GraphDatabaseService database) {
+        try (Transaction tx = database.beginTx()) {
             database.execute("EXPLAIN " + cypherQuery);
-            valid = true;
             tx.success();
-        } catch (RuntimeException e) {
-            valid = false;
-            tx.failure();
-        } finally {
-            tx.close();
         }
-        return valid;
     }
 
     private void setNamesFromCypher(String cypherQuery) throws InvalidCypherException, InvalidCypherMatchException {

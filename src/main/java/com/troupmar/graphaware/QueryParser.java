@@ -14,7 +14,7 @@ public abstract class QueryParser {
     protected Set<String> nodeNames;
     protected Map<String, String []> relsWithNodes;
 
-    protected abstract boolean isQueryValid(String cypherQuery, GraphDatabaseService database);
+    protected abstract void validateQuery(String cypherQuery, GraphDatabaseService database);
 
     protected boolean hasValidRelationships(String patternQuery) {
         Pattern pattern = Pattern.compile("(<?-->?)");

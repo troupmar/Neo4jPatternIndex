@@ -2,76 +2,34 @@ package com.troupmar.graphaware;
 
 import org.neo4j.graphdb.*;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Martin on 12.04.15.
  */
 public class DatabaseHandler {
 
-    public static void createRelationship(GraphDatabaseService database, Node from, Node to, RelationshipType relType) {
-        Transaction tx = database.beginTx();
-        try {
-            from.createRelationshipTo(to, relType);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-
-    public static void createRelationship(GraphDatabaseService database, Node from, Long toID, RelationshipType relType) {
-        Transaction tx = database.beginTx();
-        try {
-            from.createRelationshipTo(database.getNodeById(toID), relType);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-
-    public static Node createNewUnitNode(GraphDatabaseService database) {
-        Node node = null;
-        Transaction tx = database.beginTx();
-        try {
-            node = database.createNode();
-            node.addLabel(NodeLabels._META_);
-            node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
+    // Method to create new pattern index root node
+    public static Node createNewUnitNode(GraphDatabaseService database, PatternUnit patternUnit) {
+        Node node = database.createNode();
+        node.addLabel(NodeLabels._META_);
+        node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
+        node.setProperty("specificUnits", PatternUnit.specificUnitsToString(patternUnit.getSpecificUnits()));
         return node;
     }
 
+    // Method to create pattern index unit node
     public static Node createNewRootNode(GraphDatabaseService database, PatternQuery patternQuery, String patternName, int numOfUnits) {
-        Node node = null;
-        Transaction tx = database.beginTx();
-        try {
-            node = database.createNode();
-            node.addLabel(NodeLabels._META_);
-            node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
-            node.setProperty("patternName", patternName);
-            node.setProperty("patternQuery", patternQuery.getPatternQuery());
-            node.setProperty("relsWithNames", QueryParser.relsWithNodesToString(patternQuery.getRelsWithNodes()));
-            node.setProperty("numOfUnits", numOfUnits);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
+        Node node = database.createNode();
+        node.addLabel(NodeLabels._META_);
+        node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
+        node.setProperty("patternName", patternName);
+        node.setProperty("patternQuery", patternQuery.getPatternQuery());
+        node.setProperty("relsWithNames", QueryParser.relsWithNodesToString(patternQuery.getRelsWithNodes()));
+        node.setProperty("numOfUnits", numOfUnits);
         return node;
     }
 
@@ -102,6 +60,7 @@ public class DatabaseHandler {
         return patternIndexes;
     }
 
+
     public static Iterable<Relationship> getRelationships(GraphDatabaseService database, Node node, Direction dir) {
         Iterable<Relationship> relationships = null;
         Transaction tx = database.beginTx();
@@ -117,20 +76,6 @@ public class DatabaseHandler {
         return relationships;
     }
 
-    public static Iterable<Relationship> getRelationshipsByLabel(GraphDatabaseService database, Node node, Direction dir, RelationshipTypes label) {
-        Iterable<Relationship> relationships = null;
-        Transaction tx = database.beginTx();
-        try {
-            relationships = node.getRelationships(dir, label);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-        return relationships;
-    }
 
     public static Node getNodeById(GraphDatabaseService database, Long nodeID) {
         Node node = null;
@@ -171,5 +116,42 @@ public class DatabaseHandler {
         } finally {
             tx.close();
         }
+    }
+
+    // Method to get all META relationships of given node
+    public static HashSet<Relationship> getMetaRelsOfNode(Node node) {
+        HashSet<Relationship> metaRelsOfNode = new HashSet<>();
+        Iterator<Relationship> itr = node.getRelationships().iterator();
+        while (itr.hasNext()) {
+            Relationship relationship = itr.next();
+            if (relationship.isType(RelationshipTypes.PATTERN_INDEX_RELATION)) {
+                metaRelsOfNode.add(relationship);
+            }
+        }
+        return metaRelsOfNode;
+    }
+
+    // Method to update unit pattern node's specific units: after relationship is deleted -> some specific units might be deleted
+    public static int updateSpecificUnits(GraphDatabaseService database, Node unitNode, Long deletedRelID) {
+        String[] specificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
+        Set<String> updatedSpecificUnits = new HashSet<>();
+        boolean delete = false;
+        for (String specificUnit : specificUnits) {
+            for (String relID : specificUnit.split("_")) {
+                if (Long.valueOf(relID) == deletedRelID) {
+                    delete = true;
+                    break;
+                }
+            }
+            if (! delete) {
+                updatedSpecificUnits.add(specificUnit);
+            } else {
+                delete = false;
+            }
+        }
+        if (updatedSpecificUnits.size() != 0) {
+            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(updatedSpecificUnits));
+        }
+        return updatedSpecificUnits.size();
     }
 }

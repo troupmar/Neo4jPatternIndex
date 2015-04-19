@@ -18,7 +18,8 @@ public class PatternQuery extends QueryParser {
         nodeNames      = new LinkedHashSet<String>();
         relsWithNodes  = new LinkedHashMap<String, String[]>();
 
-        if (! isQueryValid(patternQuery, database) || ! hasValidRelationships(patternQuery)) {
+        validateQuery(patternQuery, database);
+        if (! hasValidRelationships(patternQuery)) {
             throw new InvalidCypherMatchException();
         }
 
@@ -27,21 +28,12 @@ public class PatternQuery extends QueryParser {
     }
 
     @Override
-    protected boolean isQueryValid(String cypherQuery, GraphDatabaseService database) {
-        // TODO EXPLAIN needs to be in transaction, why?
-        boolean valid;
-        Transaction tx = database.beginTx();
-        try {
+    protected void validateQuery(String cypherQuery, GraphDatabaseService database) {
+        // TODO when not in transaction - there is rollback of all operations while building index
+        try (Transaction tx = database.beginTx()) {
             database.execute("EXPLAIN MATCH " + cypherQuery + " RETURN count(*)");
-            valid = true;
             tx.success();
-        } catch (RuntimeException e) {
-            valid = false;
-            tx.failure();
-        } finally {
-            tx.close();
         }
-        return valid;
     }
 
     public String getPatternQuery() {
