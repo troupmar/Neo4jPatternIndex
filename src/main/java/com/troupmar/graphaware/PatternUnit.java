@@ -57,8 +57,12 @@ public class PatternUnit {
         return specificUnitsString.substring(0, specificUnitsString.length() - 1);
     }
 
-    public static String[] specificUnitsFromString(String specificUnitsString) {
-        return specificUnitsString.split(";");
+    public static Set<String> specificUnitsFromString(String specificUnitsString) {
+        Set<String> specificUnits = new HashSet<>();
+        for (String specificUnit : specificUnitsString.split(";")) {
+            specificUnits.add(specificUnit);
+        }
+        return specificUnits;
     }
 
     public Long[] getNodeIDs() {

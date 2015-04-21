@@ -9,11 +9,11 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 /**
  * Created by Martin on 19.04.15.
  */
-public class DeleteTransactionHandler extends TransactionEventHandler.Adapter<Void> {
+public class CreateTransactionHandler extends TransactionEventHandler.Adapter<Void> {
     private Database database;
     private PatternIndexModel model;
 
-    public DeleteTransactionHandler(Database database, PatternIndexModel model) {
+    public CreateTransactionHandler(Database database, PatternIndexModel model) {
         this.database = database;
         this.model = model;
     }
@@ -21,7 +21,7 @@ public class DeleteTransactionHandler extends TransactionEventHandler.Adapter<Vo
     @Override
     public Void beforeCommit(TransactionData data) throws Exception {
         ImprovedTransactionData improvedTransactionData = new LazyTransactionData(data);
-
+        model.handleCreate(improvedTransactionData.getAllCreatedRelationships());
         //model.handleDelete(improvedTransactionData.getAllDeletedNodes(), improvedTransactionData.getAllDeletedRelationships());
 
         return null;

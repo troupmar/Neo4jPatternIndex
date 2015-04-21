@@ -39,9 +39,10 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
     @Override
     public Void beforeCommit(ImprovedTransactionData improvedTransactionData) throws DeliberateTransactionRollbackException {
 
-        // TODO prevent not to execute all of this when building new index (adding new meta nodes...)
         if (! onlyMetaRelsCreated(improvedTransactionData)) {
+            /*
             try {
+
                 File file = new File("log-transaction-data.txt");
                 //if file doesnt exists, then create it
                 if (!file.exists()) {
@@ -51,22 +52,17 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
                 FileWriter fileWritter = null;
                 fileWritter = new FileWriter(file.getName(), true);
                 BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+                */
 
-                // handle deleted nodes and relationships
-                patternIndexModel.handleDelete(bufferWritter, improvedTransactionData.getAllDeletedNodes(), improvedTransactionData.getAllDeletedRelationships());
-                // after delete was handled - check and delete index if it has no units
-                //patternIndexModel.deleteEmptyIndexes();
+                // handle DML operations
+                patternIndexModel.handleDML(improvedTransactionData);
 
-                // handle created nodes and relationships
-                //patternIndexModel.handleCreate(improvedTransactionData.getAllCreatedRelationships());
-
-
+            /*
                 bufferWritter.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
+            */
         }
         return null;
     }

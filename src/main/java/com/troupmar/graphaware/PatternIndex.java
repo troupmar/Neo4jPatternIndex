@@ -4,6 +4,7 @@ import org.neo4j.graphdb.Node;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Martin on 05.04.15.
@@ -12,16 +13,18 @@ public class PatternIndex {
 
     private String patternName;
     private String patternQuery;
-    private Map<String, String[]> relsWithNodes;
+    private Set<String> nodeNames;
+    private Set<String> relNames;
     private Node rootNode;
     private int numOfUnits;
 
 
-    public PatternIndex(String patternName, String patternQuery, Node rootNode, int numOfUnits, Map<String, String[]> relsWithNodes) {
+    public PatternIndex(String patternName, String patternQuery, Node rootNode, Set<String> nodeNames, Set<String> relNames, int numOfUnits) {
         this.patternName = patternName;
         this.patternQuery = patternQuery;
-        this.relsWithNodes = relsWithNodes;
         this.rootNode = rootNode;
+        this.nodeNames = nodeNames;
+        this.relNames = relNames;
         this.numOfUnits = numOfUnits;
     }
 
@@ -45,7 +48,11 @@ public class PatternIndex {
         this.numOfUnits = numOfUnits;
     }
 
-    public Map<String, String[]> getRelsWithNodes() {
-        return relsWithNodes;
+    public Set<String> getNodeNames() {
+        return nodeNames;
+    }
+
+    public Set<String> getRelNames() {
+        return relNames;
     }
 }

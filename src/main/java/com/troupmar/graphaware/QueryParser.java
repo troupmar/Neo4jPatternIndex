@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  */
 public abstract class QueryParser {
     protected Set<String> nodeNames;
-    protected Map<String, String []> relsWithNodes;
+    protected Set<String> relNames;
 
     protected abstract void validateQuery(String cypherQuery, GraphDatabaseService database);
 
@@ -35,10 +35,8 @@ public abstract class QueryParser {
             if (item.charAt(0) == '(') {
                 nodeNames.add(getVarName(item));
             } else if (item.charAt(0) == '[') {
-                String[] surroundNodes = new String[2];
-                surroundNodes[0] = getVarName(parsedVars.get(i - 1).replaceAll("\\s+", " ").trim());
-                surroundNodes[1] = getVarName(parsedVars.get(i + 1).replaceAll("\\s+", " ").trim());
-                relsWithNodes.put(getVarName(item), surroundNodes);
+                relNames.add(getVarName(item));
+
             } else {
                 nodeNames.add(getVarName(item));
             }
@@ -79,24 +77,24 @@ public abstract class QueryParser {
         return nodeNames;
     }
 
-    public Map<String, String[]> getRelsWithNodes() {
-        return relsWithNodes;
+    public Set<String> getRelNames() {
+        return relNames;
     }
 
-    public static String relsWithNodesToString(Map<String, String[]> relsWithNodes) {
-        String relsWithNodesString = "";
-        for (Map.Entry<String, String[]> relWithNodes : relsWithNodes.entrySet()) {
-            relsWithNodesString += relWithNodes.getKey() + ":" + relWithNodes.getValue()[0] + "," + relWithNodes.getValue()[1] + ";";
+    public static String namesToString(Set<String> names) {
+        String namesString = "";
+        for (String name : names) {
+            namesString += name + ",";
         }
-        return relsWithNodesString.substring(0, relsWithNodesString.length() - 1);
+        return namesString.substring(0, namesString.length() - 1);
     }
 
-    public static Map<String, String[]> getRelsWithNodesFromString(String relsWithNodesFromString) {
-        Map<String, String[]> relsWithNodes = new LinkedHashMap<String, String[]>();
-        for (String rel : relsWithNodesFromString.split(";")) {
-            String[] relAndNodes = rel.split(":");
-            relsWithNodes.put(relAndNodes[0], relAndNodes[1].split(","));
+    public static Set<String> namesFromString(String namesString) {
+        Set<String> names = new LinkedHashSet<>();
+        for (String name : namesString.split(",")) {
+            names.add(name);
         }
-        return relsWithNodes;
+        return names;
     }
+
 }

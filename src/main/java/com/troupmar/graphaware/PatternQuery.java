@@ -4,7 +4,6 @@ import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 /**
@@ -15,8 +14,8 @@ public class PatternQuery extends QueryParser {
     private String patternQuery;
 
     public PatternQuery(String patternQuery, GraphDatabaseService database) throws InvalidCypherMatchException {
-        nodeNames      = new LinkedHashSet<String>();
-        relsWithNodes  = new LinkedHashMap<String, String[]>();
+        nodeNames = new LinkedHashSet<>();
+        relNames = new LinkedHashSet<>();
 
         validateQuery(patternQuery, database);
         if (! hasValidRelationships(patternQuery)) {

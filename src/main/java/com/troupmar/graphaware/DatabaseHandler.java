@@ -28,13 +28,14 @@ public class DatabaseHandler {
         node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
         node.setProperty("patternName", patternName);
         node.setProperty("patternQuery", patternQuery.getPatternQuery());
-        node.setProperty("relsWithNames", QueryParser.relsWithNodesToString(patternQuery.getRelsWithNodes()));
+        node.setProperty("nodeNames", PatternQuery.namesToString(patternQuery.getNodeNames()));
+        node.setProperty("relNames", PatternQuery.namesToString(patternQuery.getRelNames()));
         node.setProperty("numOfUnits", numOfUnits);
         return node;
     }
 
     public static Map<String, PatternIndex> getPatternIndexRoots(GraphDatabaseService database) {
-        Map<String, PatternIndex> patternIndexes = new HashMap<String, PatternIndex>();
+        Map<String, PatternIndex> patternIndexes = new HashMap<>();
 
         ResourceIterator<Node> rootNodes = null;
         Transaction tx = database.beginTx();
@@ -46,8 +47,8 @@ public class DatabaseHandler {
             while (rootNodes.hasNext()) {
                 rootNode = rootNodes.next();
                 PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
-                        rootNode.getProperty("patternQuery").toString(), rootNode, (int) rootNode.getProperty("numOfUnits"),
-                        QueryParser.getRelsWithNodesFromString(rootNode.getProperty("relsWithNames").toString()));
+                        rootNode.getProperty("patternQuery").toString(), rootNode, PatternQuery.namesFromString((String) rootNode.getProperty("nodeNames")),
+                        PatternQuery.namesFromString((String) rootNode.getProperty("relNames")), (int) rootNode.getProperty("numOfUnits"));
                 patternIndexes.put(patternIndex.getPatternName(), patternIndex);
             }
             tx.success();
@@ -132,8 +133,8 @@ public class DatabaseHandler {
     }
 
     // Method to update unit pattern node's specific units: after relationship is deleted -> some specific units might be deleted
-    public static int updateSpecificUnits(GraphDatabaseService database, Node unitNode, Long deletedRelID) {
-        String[] specificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
+    public static int updatePatternUnitOnDelete(Node unitNode, Long deletedRelID) {
+        Set<String> specificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
         Set<String> updatedSpecificUnits = new HashSet<>();
         boolean delete = false;
         for (String specificUnit : specificUnits) {
@@ -153,5 +154,21 @@ public class DatabaseHandler {
             unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(updatedSpecificUnits));
         }
         return updatedSpecificUnits.size();
+    }
+
+    // TODO review and test
+    public static void updatePatternUnitOnCreate(Node unitNode, PatternUnit patternUnit) {
+        Set<String> currentSpecificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
+        Set<String> newSpecificUnits = patternUnit.getSpecificUnits();
+        boolean updated = false;
+        for (String newSpecificUnit : newSpecificUnits) {
+            if (! currentSpecificUnits.contains(newSpecificUnit)) {
+                currentSpecificUnits.add(newSpecificUnit);
+                updated = true;
+            }
+        }
+        if (updated) {
+            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(currentSpecificUnits));
+        }
     }
 }

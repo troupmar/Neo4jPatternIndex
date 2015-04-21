@@ -5,27 +5,34 @@ import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import com.troupmar.graphaware.unit.handlers.Database;
-import com.troupmar.graphaware.unit.handlers.DeleteTransactionHandler;
+import com.troupmar.graphaware.unit.handlers.CreateTransactionHandler;
 import org.junit.Test;
-import org.neo4j.graphdb.Result;
 
 /**
  * Created by Martin on 05.04.15.
  */
 
-public class HandleDeleteTest {
+public class HandleCreateTest {
 
     @Test
     public void handleDeleteTest() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
 
         Database database = new Database(Database.DB_PATH, "still");
         PatternIndexModel model = PatternIndexModel.getInstance(database.getDatabase());
-        database.getDatabase().registerTransactionEventHandler(new DeleteTransactionHandler(database, model));
+        database.getDatabase().registerTransactionEventHandler(new CreateTransactionHandler(database, model));
 
-        database.getDatabase().execute("MATCH (n {name:'Charles Reid'})-[r]-() DELETE n,r");
+        //database.getDatabase().execute("MATCH (n {name:'Charles Reid'}), (m {name:'Kian Hurst'}) CREATE m-[r:NEW2]->n");
+        database.getDatabase().execute("MATCH (n {name:'Harriet Thornton'}), (m {name:'Francesca Russell'}) CREATE m-[r:NEW3]->n");
+        /*
+        try (Transaction tx = database.getDatabase().beginTx()) {
+            database.getDatabase().getNodeById(0).delete();
+            tx.success();
+        }
+        */
 
         //String cypher = "  (   a)-[r]-(bla {name: 'trik'} )-[ff]- (aa:Person)-[pp:Person]-(a), (kk),   (j),(l:Person)  ";
 
         database.closeDatabase();
     }
+
 }
