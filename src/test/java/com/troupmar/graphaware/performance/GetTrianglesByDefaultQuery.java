@@ -72,7 +72,7 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
 
     }
 
-    //@Override
+    @Override
     public String getExistingDatabasePath() {
         return "testDb/graph" + GRAPH_SIZE + ".db.zip";
     }

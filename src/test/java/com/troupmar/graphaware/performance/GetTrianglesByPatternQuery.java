@@ -77,7 +77,7 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
     }
 
-    //@Override
+    @Override
     public String getExistingDatabasePath() {
         return "testDb/graph" + GRAPH_SIZE + ".db.zip";
     }

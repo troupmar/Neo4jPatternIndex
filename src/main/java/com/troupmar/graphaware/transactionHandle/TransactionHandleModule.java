@@ -39,9 +39,9 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
     @Override
     public Void beforeCommit(ImprovedTransactionData improvedTransactionData) throws DeliberateTransactionRollbackException {
 
-        //if (! onlyMetaRelsCreated(improvedTransactionData)) {
+        if (! onlyMetaRelsCreated(improvedTransactionData)) {
             patternIndexModel.handleDML(improvedTransactionData);
-        //}
+        }
         return null;
     }
 

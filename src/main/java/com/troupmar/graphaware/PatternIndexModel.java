@@ -276,7 +276,6 @@ public class PatternIndexModel {
                 Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
                 for (Node commonMetaNode : commonMetaNodes) {
                     if (!metaNodes.contains(commonMetaNode)) {
-                        //commonMetaNodes.remove(commonMetaNode);
                         toDelete.add(commonMetaNode);
                     }
                 }
