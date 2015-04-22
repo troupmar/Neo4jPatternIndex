@@ -160,6 +160,10 @@ public class DatabaseHandler {
     public static void updatePatternUnitOnCreate(Node unitNode, PatternUnit patternUnit) {
         Set<String> currentSpecificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
         Set<String> newSpecificUnits = patternUnit.getSpecificUnits();
+        if (! currentSpecificUnits.equals(newSpecificUnits)) {
+            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(newSpecificUnits));
+        }
+        /*
         boolean updated = false;
         for (String newSpecificUnit : newSpecificUnits) {
             if (! currentSpecificUnits.contains(newSpecificUnit)) {
@@ -167,8 +171,10 @@ public class DatabaseHandler {
                 updated = true;
             }
         }
+
         if (updated) {
             unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(currentSpecificUnits));
         }
+        */
     }
 }

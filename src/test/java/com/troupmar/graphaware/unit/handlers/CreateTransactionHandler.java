@@ -22,8 +22,6 @@ public class CreateTransactionHandler extends TransactionEventHandler.Adapter<Vo
     public Void beforeCommit(TransactionData data) throws Exception {
         ImprovedTransactionData improvedTransactionData = new LazyTransactionData(data);
         model.handleDML(improvedTransactionData);
-        //model.handleCreate(improvedTransactionData.getAllCreatedRelationships());
-        //model.handleDelete(improvedTransactionData.getAllDeletedNodes(), improvedTransactionData.getAllDeletedRelationships());
 
         return null;
     }
