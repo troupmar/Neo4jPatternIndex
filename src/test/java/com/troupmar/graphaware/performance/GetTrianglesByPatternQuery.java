@@ -1,10 +1,8 @@
 package com.troupmar.graphaware.performance;
 
-import com.esotericsoftware.minlog.Log;
 import com.graphaware.test.performance.*;
 import com.graphaware.test.util.TestUtils;
 import com.troupmar.graphaware.CypherQuery;
-import com.troupmar.graphaware.PatternIndex;
 import com.troupmar.graphaware.PatternIndexModel;
 import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
@@ -12,9 +10,6 @@ import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
-
-import static com.graphaware.test.util.TestUtils.post;
-import static com.graphaware.test.util.TestUtils.put;
 
 public class GetTrianglesByPatternQuery implements PerformanceTest {
 
@@ -82,7 +77,7 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
     }
 
-    @Override
+    //@Override
     public String getExistingDatabasePath() {
         return "testDb/graph" + GRAPH_SIZE + ".db.zip";
     }

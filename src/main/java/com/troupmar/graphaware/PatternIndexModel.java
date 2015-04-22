@@ -1,14 +1,11 @@
 package com.troupmar.graphaware;
 
 
-import com.google.common.collect.Sets;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.*;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -16,14 +13,14 @@ import java.util.*;
  */
 public class PatternIndexModel {
     private static PatternIndexModel instance = null;
-    private static Object mutex = new Object();
+    private static final Object mutex = new Object();
 
     private GraphDatabaseService database;
     private Map<String, PatternIndex> patternIndexes;
 
     /* PATTERN INDEX MODEL INIT */
 
-    public PatternIndexModel(GraphDatabaseService database) {
+    private PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
         this.patternIndexes = DatabaseHandler.getPatternIndexRoots(database);
     }
@@ -37,6 +34,12 @@ public class PatternIndexModel {
             }
         }
         return instance;
+    }
+
+    public static void destroy() {
+        synchronized (mutex) {
+            instance = null;
+        }
     }
 
     /* QUERY WITH INDEX */
@@ -271,7 +274,7 @@ public class PatternIndexModel {
                 metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
                 Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
                 for (Node commonMetaNode : commonMetaNodes) {
-                    if (! metaNodes.contains(commonMetaNode)) {
+                    if (!metaNodes.contains(commonMetaNode)) {
                         commonMetaNodes.remove(commonMetaNode);
                     }
                 }
