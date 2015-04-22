@@ -268,6 +268,7 @@ public class PatternIndexModel {
     private Node getIndexUnitNodeForNodes(PatternIndex patternIndex, Long[] nodeIDs) {
         Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
         Set<Node> commonMetaNodes = getStartNodesForRelationships(metaRelsOfNode);
+        Set<Node> toDelete = new HashSet<>();
 
         if (nodeIDs.length > 1) {
             for (int i = 1; i < nodeIDs.length; i++) {
@@ -275,9 +276,12 @@ public class PatternIndexModel {
                 Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
                 for (Node commonMetaNode : commonMetaNodes) {
                     if (!metaNodes.contains(commonMetaNode)) {
-                        commonMetaNodes.remove(commonMetaNode);
+                        //commonMetaNodes.remove(commonMetaNode);
+                        toDelete.add(commonMetaNode);
                     }
                 }
+                commonMetaNodes.removeAll(toDelete);
+                toDelete.clear();
             }
         }
         for (Node commonMetaNode : commonMetaNodes) {
