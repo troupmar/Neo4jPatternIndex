@@ -39,31 +39,9 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
     @Override
     public Void beforeCommit(ImprovedTransactionData improvedTransactionData) throws DeliberateTransactionRollbackException {
 
-        if (! onlyMetaRelsCreated(improvedTransactionData)) {
-            /*
-            try {
-
-                File file = new File("log-transaction-data.txt");
-                //if file doesnt exists, then create it
-                if (!file.exists()) {
-                    file.createNewFile();
-                }
-                //true = append file
-                FileWriter fileWritter = null;
-                fileWritter = new FileWriter(file.getName(), true);
-                BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
-                */
-
-                // handle DML operations
-                patternIndexModel.handleDML(improvedTransactionData);
-
-            /*
-                bufferWritter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-        }
+        //if (! onlyMetaRelsCreated(improvedTransactionData)) {
+            patternIndexModel.handleDML(improvedTransactionData);
+        //}
         return null;
     }
 

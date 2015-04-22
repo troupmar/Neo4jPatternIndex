@@ -17,7 +17,7 @@ public class BuildIndexTest {
         Database database = new Database(Database.DB_ZIP_PATH, "zip-still");
 
         // building index
-        String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
+        String cypherMatch = "(a:Person)-[r]-(b:Person)-[p]-(c:Person)-[q]-(a:Person)";
         PatternQuery patternQuery = new PatternQuery(cypherMatch, database.getDatabase());
         PatternIndexModel model = PatternIndexModel.getInstance(database.getDatabase());
         model.buildNewIndex(patternQuery, "triangle-index");

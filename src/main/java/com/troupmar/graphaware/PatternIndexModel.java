@@ -1,6 +1,8 @@
 package com.troupmar.graphaware;
 
 
+import com.google.common.collect.Sets;
+import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.*;
@@ -98,52 +100,6 @@ public class PatternIndexModel {
         query = query.substring(0, query.length() - 6);
         // execute query and return result
         return database.execute(query);
-    }
-
-    // TODO review and debug
-    public void handleCreate(Collection<Relationship> createdRels) {
-        // if there are more relationships that share start node created in single transaction
-        // - that start node does not need to be queried more times - query is MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) WHERE id(a)=3 AND NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN id(a), id(b), id(c), id(r), id(p), id(q) UNION MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) WHERE id(b)=3 AND NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN id(a), id(b), id(c), id(r), id(p), id(q) UNION MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) WHERE id(c)=3 AND NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN id(a), id(b), id(c), id(r), id(p), id(q) executed on after commit database
-        // (all changes in transaction are already processed)
-        Set<Long> queriedNodeIDs = new HashSet<>();
-
-        for (Relationship createdRel : createdRels) {
-            // get start node - it could be end node as well - does not matter which one
-            Node startNode = createdRel.getStartNode();
-            if (! queriedNodeIDs.contains(startNode.getId())) {
-                for (PatternIndex patternIndex : patternIndexes.values()) {
-                    String matchClause = "MATCH " + patternIndex.getPatternQuery();
-                    String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
-
-                    Result result = getPatternUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), startNode.getId());
-                    Map<String, PatternUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
-                    for (PatternUnit patternUnit : patternUnits.values()) {
-                        result = database.execute(composeGetSharedPatternUnitCypher(patternUnit.getNodeIDs(), "m"));
-                        // TODO - it can be more of them, not just one!!
-                        if (result.hasNext()) {
-                            Node unitNode = database.getNodeById((Long) result.next().get("id(m)"));
-                            DatabaseHandler.updatePatternUnitOnCreate(unitNode, patternUnit);
-                        } else {
-                            createPatternUnitNode(patternUnit, patternIndex.getRootNode());
-                        }
-                    }
-                }
-                queriedNodeIDs.add(startNode.getId());
-            }
-        }
-    }
-
-    private String composeGetSharedPatternUnitCypher(Long[] nodeIDs, String patternUnitName) {
-        String patternUnitsQuery = "MATCH ";
-        String condition = "WHERE ";
-        for (int i=0; i<nodeIDs.length; i++) {
-            patternUnitsQuery += "(a" + i + ")-[:PATTERN_INDEX_RELATION]-(" + patternUnitName + ":_META_), ";
-            condition += "id(a" + i + ")=" + nodeIDs[i] + " AND ";
-        }
-        patternUnitsQuery = patternUnitsQuery.substring(0, patternUnitsQuery.length() - 2) + " ";
-        patternUnitsQuery += condition.substring(0, condition.length() - 5) + " ";
-        patternUnitsQuery += "RETURN id(" + patternUnitName + ")";
-        return patternUnitsQuery;
     }
 
     /* QUERY COMPOSE HELPER METHODS */
@@ -258,8 +214,86 @@ public class PatternIndexModel {
             handleRelationshipDelete(itd.getAllDeletedRelationships(), deletedNodeIDs);
             deleteEmptyIndexes();
         }
-        handleCreate(itd.getAllCreatedRelationships());
+        if (itd.getAllCreatedNodes().size() != 0 || itd.getAllCreatedRelationships().size() != 0) {
+            handleCreate(itd.getAllCreatedRelationships());
+        }
+        if (itd.getAllChangedNodes().size() != 0 || itd.getAllChangedRelationships().size() != 0) {
+            handleChange(itd.getAllChangedNodes(), itd.getAllChangedRelationships());
+        }
+    }
 
+    private void handleCreate(Collection<Relationship> createdRels) {
+        Set<Node> affectedNodes = new HashSet<>();
+        for (Relationship createdRel : createdRels) {
+            affectedNodes.add(createdRel.getStartNode());
+        }
+        updateIndexes(affectedNodes);
+    }
+
+    private void handleChange(Collection<Change<Node>> changedNodes, Collection<Change<Relationship>> changedRels) {
+        Set<Node> affectedNodes = new HashSet<>();
+        for (Change<Node> changedNode : changedNodes) {
+            affectedNodes.add(changedNode.getCurrent());
+        }
+        for (Change<Relationship> changedRel : changedRels) {
+            affectedNodes.add(changedRel.getCurrent().getStartNode());
+        }
+        updateIndexes(affectedNodes);
+    }
+
+    // TODO review and debug
+    public void updateIndexes(Set<Node> affectedNodes) {
+        for (Node affectedNode : affectedNodes) {
+            for (PatternIndex patternIndex : patternIndexes.values()) {
+                String matchClause = "MATCH " + patternIndex.getPatternQuery();
+                String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
+
+                Result result = getPatternUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
+                Map<String, PatternUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
+                for (PatternUnit patternUnit : patternUnits.values()) {
+                    Node indexUnitNode = getIndexUnitNodeForNodes(patternIndex, patternUnit.getNodeIDs());
+                    if (indexUnitNode != null) {
+                        DatabaseHandler.updatePatternUnitOnCreate(indexUnitNode, patternUnit);
+                    } else {
+                        createPatternUnitNode(patternUnit, patternIndex.getRootNode());
+                    }
+                }
+            }
+        }
+    }
+
+    private Node getIndexUnitNodeForNodes(PatternIndex patternIndex, Long[] nodeIDs) {
+        Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+        Set<Node> commonMetaNodes = getStartNodesForRelationships(metaRelsOfNode);
+
+        if (nodeIDs.length > 1) {
+            for (int i = 1; i < nodeIDs.length; i++) {
+                metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+                Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
+                for (Node commonMetaNode : commonMetaNodes) {
+                    if (! metaNodes.contains(commonMetaNode)) {
+                        commonMetaNodes.remove(commonMetaNode);
+                    }
+                }
+            }
+        }
+        for (Node commonMetaNode : commonMetaNodes) {
+            Relationship relToRoot = commonMetaNode.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
+                return commonMetaNode;
+            }
+        }
+        return null;
+    }
+
+    private Set<Node> getStartNodesForRelationships(Iterable<Relationship> relationships) {
+        Set<Node> startNodes = new HashSet<>();
+        Iterator itr = relationships.iterator();
+        while (itr.hasNext()) {
+            Relationship nextRel = (Relationship) itr.next();
+            startNodes.add(nextRel.getStartNode());
+        }
+        return startNodes;
     }
 
     /* HANDLE DELETE */

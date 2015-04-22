@@ -22,7 +22,11 @@ public class HandleCreateTest {
         database.getDatabase().registerTransactionEventHandler(new CreateTransactionHandler(database, model));
 
         //database.getDatabase().execute("MATCH (n {name:'Charles Reid'}), (m {name:'Kian Hurst'}) CREATE m-[r:NEW2]->n");
-        database.getDatabase().execute("MATCH (n {name:'Harriet Thornton'}), (m {name:'Francesca Russell'}) CREATE m-[r:NEW3]->n");
+        //database.getDatabase().execute("MATCH (n {name:'Harriet Thornton'}), (m {name:'Francesca Russell'}) CREATE m-[r:NEW3]->n");
+        database.getDatabase().execute("CREATE (m:MY {name:'Martin'})");
+        database.getDatabase().execute("MATCH (m:MY {name:'Martin'}), (n:Person {name:'Kian Hurst'}) CREATE m-[r:NEW]->n");
+        database.getDatabase().execute("MATCH (m:MY {name:'Martin'}), (n:Person {name:'Francesca Russell'}) CREATE m-[r:NEW]->n");
+        database.getDatabase().execute("MATCH (n:MY {name:'Martin'}) REMOVE n:MY SET n:Person");
         /*
         try (Transaction tx = database.getDatabase().beginTx()) {
             database.getDatabase().getNodeById(0).delete();
