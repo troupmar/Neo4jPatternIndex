@@ -5,11 +5,11 @@ import java.util.*;
 /**
  * Created by Martin on 18.04.15.
  */
-public class PatternUnit {
+public class PatternIndexUnit {
     private Long[] nodeIDs;
     private Set<String> specificUnits;
 
-    public PatternUnit(Map<String, Object> newSpecificUnit, Set<String> nodeNames, Set<String> relNames) {
+    public PatternIndexUnit(Map<String, Object> newSpecificUnit, Set<String> nodeNames, Set<String> relNames) {
         setNodeIDs(newSpecificUnit, nodeNames);
         specificUnits = new HashSet<>();
         addSpecificUnit(newSpecificUnit, relNames);

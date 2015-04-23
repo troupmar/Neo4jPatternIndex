@@ -1,6 +1,7 @@
 package com.troupmar.graphaware;
 
 
+import com.esotericsoftware.minlog.Log;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
@@ -22,7 +23,10 @@ public class PatternIndexModel {
 
     private PatternIndexModel(GraphDatabaseService database) {
         this.database = database;
-        this.patternIndexes = DatabaseHandler.getPatternIndexRoots(database);
+        try (Transaction tx = this.database.beginTx()) {
+            this.patternIndexes = DatabaseHandler.getPatternIndexes(database);
+            tx.success();
+        }
     }
 
     public static PatternIndexModel getInstance(GraphDatabaseService database) {
@@ -55,10 +59,11 @@ public class PatternIndexModel {
         HashSet<Long> queriedNodeIDs = new HashSet<>();
         // get root node of index to query on
         Node rootNode = patternIndexes.get(patternName).getRootNode();
-        // get root relationships
-        Iterable<Relationship> relsToUnits = DatabaseHandler.getRelationships(database, rootNode, Direction.OUTGOING);
 
         try (Transaction tx = database.beginTx()) {
+            // get root relationships
+            Iterable<Relationship> relsToUnits = rootNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
+
             Iterable<Relationship> relsToNodes;
             Node unitNode;
 
@@ -150,19 +155,19 @@ public class PatternIndexModel {
     }
 
     // Method to create index based on query
-    private void buildIndex(Map<String, PatternUnit> patternUnits, PatternQuery patternQuery, String patternName) {
+    private void buildIndex(Map<String, PatternIndexUnit> patternUnits, PatternQuery patternQuery, String patternName) {
         System.out.println(patternUnits.size());
 
         try (Transaction tx = database.beginTx()) {
             // create root node of the index
-            Node patternRootNode = DatabaseHandler.createNewRootNode(database, patternQuery, patternName, patternUnits.size());
+            Node patternRootNode = DatabaseHandler.createNewPatternIndexRoot(database, patternQuery, patternName);
             // create pattern unit node for each of found pattern units
-            for (PatternUnit patternUnit : patternUnits.values()) {
-                createPatternUnitNode(patternUnit, patternRootNode);
+            for (PatternIndexUnit patternIndexUnit : patternUnits.values()) {
+                createPatternUnitNode(patternIndexUnit, patternRootNode);
             }
             // create new index of PatternIndex
             PatternIndex patternIndex = new PatternIndex(patternName, patternQuery.getPatternQuery(), patternRootNode,
-                    patternQuery.getNodeNames(), patternQuery.getRelNames(), patternUnits.size());
+                    patternQuery.getNodeNames(), patternQuery.getRelNames());
             // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
             // save index
             patternIndexes.put(patternIndex.getPatternName(), patternIndex);
@@ -171,10 +176,10 @@ public class PatternIndexModel {
         }
     }
 
-    private void createPatternUnitNode(PatternUnit patternUnit, Node patternRootNode) {
-        Node patternUnitNode = DatabaseHandler.createNewUnitNode(database, patternUnit);
+    private void createPatternUnitNode(PatternIndexUnit patternIndexUnit, Node patternRootNode) {
+        Node patternUnitNode = DatabaseHandler.createNewPatternIndexUnit(database, patternIndexUnit);
         patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
-        for (Long nodeID : patternUnit.getNodeIDs()) {
+        for (Long nodeID : patternIndexUnit.getNodeIDs()) {
             patternUnitNode.createRelationshipTo(database.getNodeById(nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
         }
     }
@@ -192,16 +197,16 @@ public class PatternIndexModel {
 
     // TODO optimize!
     // Method to process query result (query to build index on): save node IDs and relationship IDs and reduce automorphism
-    private Map<String, PatternUnit> getUniquePatternUnits(Result result, Set<String> nodeNames, Set<String> relNames) {
-        Map<String, PatternUnit> patternUnits = new HashMap<>();
+    private Map<String, PatternIndexUnit> getUniquePatternUnits(Result result, Set<String> nodeNames, Set<String> relNames) {
+        Map<String, PatternIndexUnit> patternUnits = new HashMap<>();
         while (result.hasNext()) {
             Map<String, Object> newSpecificUnit = result.next();
-            String patternUnitKey = PatternUnit.getPatternUnitKey(newSpecificUnit, nodeNames);
+            String patternUnitKey = PatternIndexUnit.getPatternUnitKey(newSpecificUnit, nodeNames);
             if (patternUnits.containsKey(patternUnitKey)) {
                 patternUnits.get(patternUnitKey).addSpecificUnit(newSpecificUnit, relNames);
             } else {
-                PatternUnit patternUnit = new PatternUnit(newSpecificUnit, nodeNames, relNames);
-                patternUnits.put(patternUnitKey, patternUnit);
+                PatternIndexUnit patternIndexUnit = new PatternIndexUnit(newSpecificUnit, nodeNames, relNames);
+                patternUnits.put(patternUnitKey, patternIndexUnit);
             }
         }
         return patternUnits;
@@ -259,26 +264,54 @@ public class PatternIndexModel {
                 String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
 
                 Result result = getPatternUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
-                Map<String, PatternUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
+                Map<String, PatternIndexUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
 
-                for (PatternUnit patternUnit : patternUnits.values()) {
-                    Node indexUnitNode = getIndexUnitNodeForNodes(patternIndex, patternUnit.getNodeIDs());
+                for (PatternIndexUnit patternUnit : patternUnits.values()) {
+                    Node indexUnitNode = getPatternIndexUnitForNodes(patternIndex, patternUnit.getNodeIDs());
                     if (indexUnitNode != null) {
-                        DatabaseHandler.updatePatternUnitOnCreate(indexUnitNode, patternUnit);
+                        Log.info("UPDATING FOR " + indexUnitNode.getId());
+                        DatabaseHandler.updatePatternIndexUnit(indexUnitNode, patternUnit);
                         updatedPatternIndexUnits.add(indexUnitNode);
                     } else {
+                        Log.info("CREATING ...");
                         createPatternUnitNode(patternUnit, patternIndex.getRootNode());
                     }
                 }
+                for (Node node : patternIndexUnitsOfNode) {
+                    Log.info("Pattern index unit node: " + node.getId());
+                }
+                for (Node node : updatedPatternIndexUnits) {
+                    Log.info("Updated pattern index unit node: " + node.getId());
+                }
+                //removeNodesFromSet(patternIndexUnitsOfNode, updatedPatternIndexUnits);
 
-                patternIndexUnitsOfNode.removeAll(updatedPatternIndexUnits);
+                // Because Set.removeAll(Set) does not work on server!
+                for (Node updatedPatternIndexUnit : updatedPatternIndexUnits) {
+                    patternIndexUnitsOfNode.remove(updatedPatternIndexUnit);
+                }
+                Log.info("AFTER SET MINUS SET: " + patternIndexUnitsOfNode.size());
                 deletePatternIndexUnits(patternIndexUnitsOfNode);
+
+                for (Node node : patternIndexUnitsOfNode) {
+                    Log.info("Pattern index unit node: " + node.getId());
+                }
 
             }
         }
     }
 
-    private Node getIndexUnitNodeForNodes(PatternIndex patternIndex, Long[] nodeIDs) {
+    private Node getPatternIndexUnitForNodes(PatternIndex patternIndex, Long[] nodeIDs) {
+        Set<Node> commonMetaNodes = getPatternIndexesUnitsForNodes(nodeIDs);
+        for (Node commonMetaNode : commonMetaNodes) {
+            Relationship relToRoot = commonMetaNode.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
+                return commonMetaNode;
+            }
+        }
+        return null;
+    }
+
+    private Set<Node> getPatternIndexesUnitsForNodes(Long[] nodeIDs) {
         Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
         Set<Node> commonMetaNodes = getStartNodesForRelationships(metaRelsOfNode);
         Set<Node> toDelete = new HashSet<>();
@@ -288,21 +321,19 @@ public class PatternIndexModel {
                 metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
                 Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
                 for (Node commonMetaNode : commonMetaNodes) {
-                    if (!metaNodes.contains(commonMetaNode)) {
+                    if (! metaNodes.contains(commonMetaNode)) {
                         toDelete.add(commonMetaNode);
                     }
                 }
-                commonMetaNodes.removeAll(toDelete);
+                // Because Set.removeAll(Set) does not work on server!
+                for (Node singleToDelete : toDelete) {
+                    commonMetaNodes.remove(singleToDelete);
+                }
                 toDelete.clear();
             }
         }
-        for (Node commonMetaNode : commonMetaNodes) {
-            Relationship relToRoot = commonMetaNode.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
-                return commonMetaNode;
-            }
-        }
-        return null;
+        return commonMetaNodes;
+
     }
 
     private Set<Node> getStartNodesForRelationships(Iterable<Relationship> relationships) {
@@ -400,18 +431,14 @@ public class PatternIndexModel {
                     // for each of these META node IDs
                     while (result.hasNext()) {
                         // get the actual META node - pattern unit node
-                        Node unitNode = DatabaseHandler.getNodeById(database, (Long) result.next().get("id(b)"));
+                        Node unitNode = database.getNodeById((Long) result.next().get("id(b)"));
                         // if some specific units (across all pattern indexes) were deleted -> remove them from the pattern unit
                         // if the pattern unit has no more specific units -> remove it
-                        if (DatabaseHandler.updatePatternUnitOnDelete(unitNode, deletedRel.getId()) == 0) {
-                            // get all relationships of this unit node
-                            Iterable<Relationship> unitNodeRels = DatabaseHandler.getRelationships(database, unitNode, Direction.BOTH);
-                            // delete all unit node relationships
-                            for (Relationship unitNodeRel : unitNodeRels) {
-                                DatabaseHandler.deleteRelationship(database, unitNodeRel);
+                        if (DatabaseHandler.updatePatternIndexUnitOnDelete(unitNode, deletedRel.getId()) == 0) {
+                            try (Transaction tx = database.beginTx()) {
+                                deletePatternIndexUnit(unitNode);
+                                tx.success();
                             }
-                            // delete unit node itself
-                            DatabaseHandler.deleteNode(database, unitNode);
                         }
                     }
                 }

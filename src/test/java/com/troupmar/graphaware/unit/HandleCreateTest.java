@@ -29,7 +29,7 @@ public class HandleCreateTest {
         //database.getDatabase().execute("MATCH (m:MY {name:'Martin'}), (n:Person {name:'Kian Hurst'}) CREATE m-[r:NEW]->n");
         //database.getDatabase().execute("MATCH (m:MY {name:'Martin'}), (n:Person {name:'Francesca Russell'}) CREATE m-[r:NEW]->n");
         //database.getDatabase().execute("MATCH (n:MY {name:'Martin'}) REMOVE n:MY SET n:Person");
-
+        database.getDatabase().execute("MATCH (n {name:'Thomas Jennings'})-[r]-(m {name:'Harriet Thornton'}) DELETE r");
         database.getDatabase().execute("MATCH (n {name:'Harriet Thornton'}), (m {name:'Francesca Russell'}) CREATE m-[r:NEW3]->n");
 
 

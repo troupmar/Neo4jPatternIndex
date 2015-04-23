@@ -16,16 +16,14 @@ public class PatternIndex {
     private Set<String> nodeNames;
     private Set<String> relNames;
     private Node rootNode;
-    private int numOfUnits;
 
 
-    public PatternIndex(String patternName, String patternQuery, Node rootNode, Set<String> nodeNames, Set<String> relNames, int numOfUnits) {
+    public PatternIndex(String patternName, String patternQuery, Node rootNode, Set<String> nodeNames, Set<String> relNames) {
         this.patternName = patternName;
         this.patternQuery = patternQuery;
         this.rootNode = rootNode;
         this.nodeNames = nodeNames;
         this.relNames = relNames;
-        this.numOfUnits = numOfUnits;
     }
 
     public String getPatternName() {
@@ -38,14 +36,6 @@ public class PatternIndex {
 
     public Node getRootNode() {
         return rootNode;
-    }
-
-    public int getNumOfUnits() {
-        return numOfUnits;
-    }
-
-    public void setNumOfUnits(int numOfUnits) {
-        this.numOfUnits = numOfUnits;
     }
 
     public Set<String> getNodeNames() {

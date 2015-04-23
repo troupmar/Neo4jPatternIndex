@@ -2,9 +2,6 @@ package com.troupmar.graphaware;
 
 import org.neo4j.graphdb.*;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -12,17 +9,14 @@ import java.util.*;
  */
 public class DatabaseHandler {
 
-    // Method to create new pattern index root node
-    public static Node createNewUnitNode(GraphDatabaseService database, PatternUnit patternUnit) {
-        Node node = database.createNode();
-        node.addLabel(NodeLabels._META_);
-        node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
-        node.setProperty("specificUnits", PatternUnit.specificUnitsToString(patternUnit.getSpecificUnits()));
-        return node;
-    }
-
-    // Method to create pattern index unit node
-    public static Node createNewRootNode(GraphDatabaseService database, PatternQuery patternQuery, String patternName, int numOfUnits) {
+    /**
+     * Method to create new pattern index root node
+     * @param database database where to create node.
+     * @param patternQuery MATCH clause of Cypher query on which to build new index.
+     * @param patternName new pattern index name.
+     * @return new pattern index root node.
+     */
+    public static Node createNewPatternIndexRoot(GraphDatabaseService database, PatternQuery patternQuery, String patternName) {
         Node node = database.createNode();
         node.addLabel(NodeLabels._META_);
         node.addLabel(NodeLabels.PATTERN_INDEX_ROOT);
@@ -30,67 +24,42 @@ public class DatabaseHandler {
         node.setProperty("patternQuery", patternQuery.getPatternQuery());
         node.setProperty("nodeNames", PatternQuery.namesToString(patternQuery.getNodeNames()));
         node.setProperty("relNames", PatternQuery.namesToString(patternQuery.getRelNames()));
-        node.setProperty("numOfUnits", numOfUnits);
         return node;
     }
 
-    public static Map<String, PatternIndex> getPatternIndexRoots(GraphDatabaseService database) {
+    /**
+     * Method to create new pattern index unit node.
+     * @param database database where to create node.
+     * @param patternIndexUnit instance that holds all specific units between its nodes.
+     * @return new pattern index unit node
+     */
+    public static Node createNewPatternIndexUnit(GraphDatabaseService database, PatternIndexUnit patternIndexUnit) {
+        Node node = database.createNode();
+        node.addLabel(NodeLabels._META_);
+        node.addLabel(NodeLabels.PATTERN_INDEX_UNIT);
+        node.setProperty("specificUnits", PatternIndexUnit.specificUnitsToString(patternIndexUnit.getSpecificUnits()));
+        return node;
+    }
+
+    /**
+     * Method to get all pattern indexes from the database.
+     * @param database database where to search for indexes.
+     * @return all pattern indexes from database.
+     */
+    public static Map<String, PatternIndex> getPatternIndexes(GraphDatabaseService database) {
         Map<String, PatternIndex> patternIndexes = new HashMap<>();
 
-        ResourceIterator<Node> rootNodes = null;
-        Transaction tx = database.beginTx();
-        // TODO should transaction be big or couple small ones?
-        try {
-            rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
+        ResourceIterator<Node> rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
 
-            Node rootNode;
-            while (rootNodes.hasNext()) {
-                rootNode = rootNodes.next();
-                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
-                        rootNode.getProperty("patternQuery").toString(), rootNode, PatternQuery.namesFromString((String) rootNode.getProperty("nodeNames")),
-                        PatternQuery.namesFromString((String) rootNode.getProperty("relNames")), (int) rootNode.getProperty("numOfUnits"));
-                patternIndexes.put(patternIndex.getPatternName(), patternIndex);
-            }
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
+        Node rootNode;
+        while (rootNodes.hasNext()) {
+            rootNode = rootNodes.next();
+            PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
+                    rootNode.getProperty("patternQuery").toString(), rootNode, PatternQuery.namesFromString((String) rootNode.getProperty("nodeNames")),
+                    PatternQuery.namesFromString((String) rootNode.getProperty("relNames")));
+            patternIndexes.put(patternIndex.getPatternName(), patternIndex);
         }
         return patternIndexes;
-    }
-
-
-    public static Iterable<Relationship> getRelationships(GraphDatabaseService database, Node node, Direction dir) {
-        Iterable<Relationship> relationships = null;
-        Transaction tx = database.beginTx();
-        try {
-            relationships = node.getRelationships(dir);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-        return relationships;
-    }
-
-
-    public static Node getNodeById(GraphDatabaseService database, Long nodeID) {
-        Node node = null;
-        Transaction tx = database.beginTx();
-        try {
-            node = database.getNodeById(nodeID);
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-        return node;
     }
 
     public static void deleteNode(GraphDatabaseService database, Node node) {
@@ -106,18 +75,6 @@ public class DatabaseHandler {
         }
     }
 
-    public static void deleteRelationship(GraphDatabaseService database, Relationship relationship) {
-        Transaction tx = database.beginTx();
-        try {
-            relationship.delete();
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
 
     // Method to get all META relationships of given node
     public static HashSet<Relationship> getMetaRelsOfNode(Node node) {
@@ -132,9 +89,14 @@ public class DatabaseHandler {
         return metaRelsOfNode;
     }
 
-    // Method to update unit pattern node's specific units: after relationship is deleted -> some specific units might be deleted
-    public static int updatePatternUnitOnDelete(Node unitNode, Long deletedRelID) {
-        Set<String> specificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
+    /**
+     * Method to update pattern index unit node when a single relationship is deleted.
+     * @param patternIndexUnitNode pattern index unit node to be updated.
+     * @param deletedRelID ID of deleted relationship.
+     * @return
+     */
+    public static int updatePatternIndexUnitOnDelete(Node patternIndexUnitNode, Long deletedRelID) {
+        Set<String> specificUnits = PatternIndexUnit.specificUnitsFromString((String) patternIndexUnitNode.getProperty("specificUnits"));
         Set<String> updatedSpecificUnits = new HashSet<>();
         boolean delete = false;
         for (String specificUnit : specificUnits) {
@@ -151,30 +113,24 @@ public class DatabaseHandler {
             }
         }
         if (updatedSpecificUnits.size() != 0) {
-            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(updatedSpecificUnits));
+            patternIndexUnitNode.setProperty("specificUnits", PatternIndexUnit.specificUnitsToString(updatedSpecificUnits));
         }
         return updatedSpecificUnits.size();
     }
 
-    // TODO review and test
-    public static void updatePatternUnitOnCreate(Node unitNode, PatternUnit patternUnit) {
-        Set<String> currentSpecificUnits = PatternUnit.specificUnitsFromString((String) unitNode.getProperty("specificUnits"));
-        Set<String> newSpecificUnits = patternUnit.getSpecificUnits();
+    /**
+     * Method to update pattern index unit node. It keeps the record of all specific pattern units between its nodes (each pattern
+     * index unit node has relationships to nodes that hold some pattern units). So
+     * whenever one of the relationship or node in those specific units gets changed or created, the property of the pattern index unit
+     * node (specificUnits) gets updated.
+     * @param patternIndexUnitNode pattern index unit node to be updated.
+     * @param patternIndexUnit instance that holds all specific units between its nodes.
+     */
+    public static void updatePatternIndexUnit(Node patternIndexUnitNode, PatternIndexUnit patternIndexUnit) {
+        Set<String> currentSpecificUnits = PatternIndexUnit.specificUnitsFromString((String) patternIndexUnitNode.getProperty("specificUnits"));
+        Set<String> newSpecificUnits = patternIndexUnit.getSpecificUnits();
         if (! currentSpecificUnits.equals(newSpecificUnits)) {
-            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(newSpecificUnits));
+            patternIndexUnitNode.setProperty("specificUnits", PatternIndexUnit.specificUnitsToString(newSpecificUnits));
         }
-        /*
-        boolean updated = false;
-        for (String newSpecificUnit : newSpecificUnits) {
-            if (! currentSpecificUnits.contains(newSpecificUnit)) {
-                currentSpecificUnits.add(newSpecificUnit);
-                updated = true;
-            }
-        }
-
-        if (updated) {
-            unitNode.setProperty("specificUnits", PatternUnit.specificUnitsToString(currentSpecificUnits));
-        }
-        */
     }
 }
