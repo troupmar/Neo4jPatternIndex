@@ -247,20 +247,33 @@ public class PatternIndexModel {
     // TODO review and debug
     public void updateIndexes(Set<Node> affectedNodes) {
         for (Node affectedNode : affectedNodes) {
+
+            Iterable<Relationship> affectedNodeMetaRels = affectedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            Set<Node> patternIndexesUnitsOfNode = getStartNodesForRelationships(affectedNodeMetaRels);
+
             for (PatternIndex patternIndex : patternIndexes.values()) {
+                Set<Node> patternIndexUnitsOfNode = getPatternIndexUnitsForIndex(patternIndexesUnitsOfNode, patternIndex);
+                Set<Node> updatedPatternIndexUnits = new HashSet<>();
+
                 String matchClause = "MATCH " + patternIndex.getPatternQuery();
                 String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
 
                 Result result = getPatternUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
                 Map<String, PatternUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
+
                 for (PatternUnit patternUnit : patternUnits.values()) {
                     Node indexUnitNode = getIndexUnitNodeForNodes(patternIndex, patternUnit.getNodeIDs());
                     if (indexUnitNode != null) {
                         DatabaseHandler.updatePatternUnitOnCreate(indexUnitNode, patternUnit);
+                        updatedPatternIndexUnits.add(indexUnitNode);
                     } else {
                         createPatternUnitNode(patternUnit, patternIndex.getRootNode());
                     }
                 }
+
+                patternIndexUnitsOfNode.removeAll(updatedPatternIndexUnits);
+                deletePatternIndexUnits(patternIndexUnitsOfNode);
+
             }
         }
     }
@@ -300,6 +313,34 @@ public class PatternIndexModel {
             startNodes.add(nextRel.getStartNode());
         }
         return startNodes;
+    }
+
+    private Set<Node> getPatternIndexUnitsForIndex(Set<Node> patternIndexesUnits, PatternIndex patternIndex) {
+        Set<Node> patternIndexUnits = new HashSet<>();
+        for (Node patternIndexesUnit : patternIndexesUnits) {
+            Relationship relToRoot = patternIndexesUnit.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
+                patternIndexUnits.add(patternIndexesUnit);
+            }
+        }
+        return patternIndexUnits;
+    }
+
+    private void deletePatternIndexUnits(Set<Node> patternIndexUnits) {
+        for (Node patternIndexUnit : patternIndexUnits) {
+            deletePatternIndexUnit(patternIndexUnit);
+        }
+    }
+
+    private void deletePatternIndexUnit(Node patternIndexUnit) {
+        // get all relationships of pattern index unit
+        Iterable<Relationship> patternIndexUnitRels = patternIndexUnit.getRelationships();
+        // delete those relationships
+        for (Relationship patternIndexUnitRel : patternIndexUnitRels) {
+            patternIndexUnitRel.delete();
+        }
+        // delete unit node itself
+        patternIndexUnit.delete();
     }
 
     /* HANDLE DELETE */
