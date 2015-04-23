@@ -10,6 +10,21 @@ import java.util.*;
 public class DatabaseHandler {
 
     /**
+     * Method to build new pattern index unit node. That means it creates new pattern index unit, connects it to the root
+     * node of the pattern index and connects it to specified nodes.
+     * @param database database to build new pattern index unit in.
+     * @param patternIndexUnit instance of PatternIndexUnit represents new pattern index unit - it contains all specific units.
+     * @param patternRootNode pattern index root of the index.
+     */
+    public static void buildNewPatternIndexUnit(GraphDatabaseService database, PatternIndexUnit patternIndexUnit, Node patternRootNode) {
+        Node patternUnitNode = DatabaseHandler.createNewPatternIndexUnit(database, patternIndexUnit);
+        patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
+        for (Long nodeID : patternIndexUnit.getNodeIDs()) {
+            patternUnitNode.createRelationshipTo(database.getNodeById(nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
+        }
+    }
+
+    /**
      * Method to create new pattern index root node
      * @param database database where to create node.
      * @param patternQuery MATCH clause of Cypher query on which to build new index.
@@ -47,46 +62,43 @@ public class DatabaseHandler {
      * @return all pattern indexes from database.
      */
     public static Map<String, PatternIndex> getPatternIndexes(GraphDatabaseService database) {
-        Map<String, PatternIndex> patternIndexes = new HashMap<>();
+        try (Transaction tx = database.beginTx()) {
+            Map<String, PatternIndex> patternIndexes = new HashMap<>();
 
-        ResourceIterator<Node> rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
+            ResourceIterator<Node> rootNodes = database.findNodes(NodeLabels.PATTERN_INDEX_ROOT);
 
-        Node rootNode;
-        while (rootNodes.hasNext()) {
-            rootNode = rootNodes.next();
-            PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
-                    rootNode.getProperty("patternQuery").toString(), rootNode, PatternQuery.namesFromString((String) rootNode.getProperty("nodeNames")),
-                    PatternQuery.namesFromString((String) rootNode.getProperty("relNames")));
-            patternIndexes.put(patternIndex.getPatternName(), patternIndex);
-        }
-        return patternIndexes;
-    }
-
-    public static void deleteNode(GraphDatabaseService database, Node node) {
-        Transaction tx = database.beginTx();
-        try {
-            node.delete();
-            tx.success();
-        } catch (RuntimeException e) {
-            // TODO Log exception and handle return
-            tx.failure();
-        } finally {
-            tx.close();
-        }
-    }
-
-
-    // Method to get all META relationships of given node
-    public static HashSet<Relationship> getMetaRelsOfNode(Node node) {
-        HashSet<Relationship> metaRelsOfNode = new HashSet<>();
-        Iterator<Relationship> itr = node.getRelationships().iterator();
-        while (itr.hasNext()) {
-            Relationship relationship = itr.next();
-            if (relationship.isType(RelationshipTypes.PATTERN_INDEX_RELATION)) {
-                metaRelsOfNode.add(relationship);
+            Node rootNode;
+            while (rootNodes.hasNext()) {
+                rootNode = rootNodes.next();
+                PatternIndex patternIndex = new PatternIndex(rootNode.getProperty("patternName").toString(),
+                        rootNode.getProperty("patternQuery").toString(), rootNode, PatternQuery.namesFromString((String) rootNode.getProperty("nodeNames")),
+                        PatternQuery.namesFromString((String) rootNode.getProperty("relNames")));
+                patternIndexes.put(patternIndex.getPatternName(), patternIndex);
             }
+            tx.success();
+            return patternIndexes;
         }
-        return metaRelsOfNode;
+    }
+
+    /**
+     * Method to delete all empty pattern index roots.
+     * @param database database where to delete pattern index roots.
+     * @param patternIndexes pattern indexes stored in database.
+     */
+    public static void deleteEmptyIndexes(GraphDatabaseService database, Map<String, PatternIndex> patternIndexes) {
+        // loop over pattern indexes
+        try (Transaction tx = database.beginTx()) {
+            for (Map.Entry<String, PatternIndex> entry : patternIndexes.entrySet()) {
+                // if root node of pattern index does not have any relationships
+                if (!entry.getValue().getRootNode().getRelationships(Direction.OUTGOING).iterator().hasNext()) {
+                    // remove pattern index
+                    patternIndexes.remove(entry.getKey());
+                    // delete root node
+                    entry.getValue().getRootNode().delete();
+                }
+            }
+            tx.success();
+        }
     }
 
     /**

@@ -29,6 +29,11 @@ public class PatternIndexModel {
         }
     }
 
+    /**
+     * Singleton method. Creates instance only if it was never created before
+     * @param database
+     * @return
+     */
     public static PatternIndexModel getInstance(GraphDatabaseService database) {
         if (instance == null) {
             synchronized (mutex) {
@@ -40,6 +45,9 @@ public class PatternIndexModel {
         return instance;
     }
 
+    /**
+     * Method to destroy instance of PatternIndexModel
+     */
     public static void destroy() {
         synchronized (mutex) {
             instance = null;
@@ -48,6 +56,13 @@ public class PatternIndexModel {
 
     /* QUERY WITH INDEX */
 
+    /**
+     * Method to execute query on specified index.
+     * @param cypherQuery instance of CypherQuery, which is user's parsed Cypher query.
+     * @param patternName pattern name to be queried on.
+     * @return result for Cypher query.
+     * @throws PatternIndexNotFoundException
+     */
     public HashSet<Map<String, Object>> getResultFromIndex(CypherQuery cypherQuery, String patternName) throws PatternIndexNotFoundException {
         // if pattern index to query on does not exist ...
         if (!patternIndexes.containsKey(patternName)) {
@@ -62,17 +77,17 @@ public class PatternIndexModel {
 
         try (Transaction tx = database.beginTx()) {
             // get root relationships
-            Iterable<Relationship> relsToUnits = rootNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
+            Iterable<Relationship> relsToPatternIndexUnits = rootNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
 
             Iterable<Relationship> relsToNodes;
-            Node unitNode;
+            Node patternIndexUnit;
 
-            // go over all relationships from root to pattern unit nodes
-            for (Relationship rel : relsToUnits) {
+            // go over all relationships from root to pattern index unit nodes
+            for (Relationship rel : relsToPatternIndexUnits) {
                 // get pattern unit node
-                unitNode = rel.getEndNode();
-                // get relationships from pattern unit node to nodes of specific unit
-                relsToNodes = unitNode.getRelationships(Direction.OUTGOING);
+                patternIndexUnit = rel.getEndNode();
+                // get relationships from pattern index unit node to nodes of specific unit
+                relsToNodes = patternIndexUnit.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
                 // get single node from specific unit
                 Long nodeToQueryID = relsToNodes.iterator().next().getEndNode().getId();
                 // if node was not already queried
@@ -82,7 +97,7 @@ public class PatternIndexModel {
                     // build RETURN clause of the query
                     String returnClause = cypherQuery.getCypherQuery().substring(cypherQuery.getInsertPosition(), cypherQuery.getCypherQuery().length());
                     // get result from query with single node of specific unit
-                    Result result = getPatternUnitsBySingleNode(matchClause, returnClause, cypherQuery.getNodeNames(), nodeToQueryID);
+                    Result result = getPatternIndexUnitsBySingleNode(matchClause, returnClause, cypherQuery.getNodeNames(), nodeToQueryID);
                     // save single result to results container
                     while (result.hasNext()) {
                         results.add(result.next());
@@ -96,13 +111,13 @@ public class PatternIndexModel {
         return results;
     }
 
-    // Method to create query with single specified node - UNION across all node names and return result
-    public Result getPatternUnitsBySingleNode(String matchClause, String returnClause, Set<String> nodes, Long nodeToQueryID) {
+    // Method to compose and execute query with single specified node - UNION across all node names and return result
+    public Result getPatternIndexUnitsBySingleNode(String matchClause, String returnClause, Set<String> nodes, Long nodeToQueryID) {
         // build query
         String query = "";
         for (String nodeName : nodes) {
             query += matchClause;
-            query += " WHERE id(" + nodeName + ")=" + nodeToQueryID + " AND " + composeMetaWhereCondition(nodes);//buildWhereConditionWithSingleNode(nodes, nodeName, nodeToQueryID) + " ";
+            query += " WHERE id(" + nodeName + ")=" + nodeToQueryID + " AND " + composeMetaProtectWhereCondition(nodes);
             query += " " + returnClause + " UNION ";
         }
         query = query.substring(0, query.length() - 6);
@@ -111,11 +126,10 @@ public class PatternIndexModel {
     }
 
     /* QUERY COMPOSE HELPER METHODS */
-    // Method to build WHERE clause as a protection from querying META data
-    private String composeMetaWhereCondition(Set<String> nodeNames/*, String nodeNameToQuery, Long nodeIDsToQuery*/) {
-        //String condition = " WHERE ";
+
+    // Method to build WHERE clause as a protection from querying META data (WHERE ALL NOT node:_META_)
+    private String composeMetaProtectWhereCondition(Set<String> nodeNames) {
         String condition = "";
-        //condition += "id(" + nodeNameToQuery + ")=" + nodeIDsToQuery + " ";
         for (String nodeName : nodeNames) {
             condition += "NOT " + nodeName + ":_META_ AND ";
         }
@@ -135,40 +149,46 @@ public class PatternIndexModel {
     }
 
     /* BUILDING INDEX */
+
     // build new index based on given query
+
+    /**
+     * Method to build new index based on given query.
+     * @param patternQuery instance of PatternQuery, which is parsed MATCH clause of Cypher query for index to be build on.
+     * @param patternName name for new index.
+     */
     public void buildNewIndex(PatternQuery patternQuery, String patternName) {
         // if pattern does not exists yet
         if (!patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
             // compose query
             String query = "MATCH " + patternQuery.getPatternQuery() + " WHERE ";
-            query += composeMetaWhereCondition(patternQuery.getNodeNames()) + " RETURN ";
+            query += composeMetaProtectWhereCondition(patternQuery.getNodeNames()) + " RETURN ";
             query += composeReturnWithIDsOfNamed(patternQuery.getNodeNames(), patternQuery.getRelNames());
 
             // execute query
             Result result = database.execute(query);
             System.out.println("Execution of original query finished!");
             // build index based on query result
-            buildIndex(getUniquePatternUnits(result, patternQuery.getNodeNames(), patternQuery.getRelNames()), patternQuery, patternName);
+            buildIndex(getUniquePatternIndexUnits(result, patternQuery.getNodeNames(), patternQuery.getRelNames()), patternQuery, patternName);
         } else {
             // TODO inform that index already exists
         }
     }
 
-    // Method to create index based on query
-    private void buildIndex(Map<String, PatternIndexUnit> patternUnits, PatternQuery patternQuery, String patternName) {
-        System.out.println(patternUnits.size());
+    // Method to actually create index based on result from query on which index should be built.
+    private void buildIndex(Map<String, PatternIndexUnit> patternIndexUnits, PatternQuery patternQuery, String patternName) {
+        System.out.println(patternIndexUnits.size());
 
         try (Transaction tx = database.beginTx()) {
             // create root node of the index
             Node patternRootNode = DatabaseHandler.createNewPatternIndexRoot(database, patternQuery, patternName);
             // create pattern unit node for each of found pattern units
-            for (PatternIndexUnit patternIndexUnit : patternUnits.values()) {
-                createPatternUnitNode(patternIndexUnit, patternRootNode);
+            for (PatternIndexUnit patternIndexUnit : patternIndexUnits.values()) {
+                DatabaseHandler.buildNewPatternIndexUnit(database, patternIndexUnit, patternRootNode);
             }
             // create new index of PatternIndex
             PatternIndex patternIndex = new PatternIndex(patternName, patternQuery.getPatternQuery(), patternRootNode,
                     patternQuery.getNodeNames(), patternQuery.getRelNames());
-            // TODO patternIndexes must be alredy initialized here! - should be done in start method (TransactionHandleModule)
             // save index
             patternIndexes.put(patternIndex.getPatternName(), patternIndex);
 
@@ -176,16 +196,8 @@ public class PatternIndexModel {
         }
     }
 
-    private void createPatternUnitNode(PatternIndexUnit patternIndexUnit, Node patternRootNode) {
-        Node patternUnitNode = DatabaseHandler.createNewPatternIndexUnit(database, patternIndexUnit);
-        patternRootNode.createRelationshipTo(patternUnitNode, RelationshipTypes.PATTERN_INDEX_RELATION);
-        for (Long nodeID : patternIndexUnit.getNodeIDs()) {
-            patternUnitNode.createRelationshipTo(database.getNodeById(nodeID), RelationshipTypes.PATTERN_INDEX_RELATION);
-        }
-    }
-
     // TODO - check if pattern index already exists must be robust!
-    // Method to check if pattern index given to create already exists
+    // Method to check if pattern index given to create already exists - only checks pattern index name and query that is build on.
     private boolean patternIndexExists(String patternQuery, String patternName) {
         for (PatternIndex patternIndex : patternIndexes.values()) {
             if (patternIndex.getPatternQuery().equals(patternQuery) || patternIndex.getPatternName().equals(patternName)) {
@@ -195,9 +207,9 @@ public class PatternIndexModel {
         return false;
     }
 
-    // TODO optimize!
+    // TODO continue refactoring
     // Method to process query result (query to build index on): save node IDs and relationship IDs and reduce automorphism
-    private Map<String, PatternIndexUnit> getUniquePatternUnits(Result result, Set<String> nodeNames, Set<String> relNames) {
+    private Map<String, PatternIndexUnit> getUniquePatternIndexUnits(Result result, Set<String> nodeNames, Set<String> relNames) {
         Map<String, PatternIndexUnit> patternUnits = new HashMap<>();
         while (result.hasNext()) {
             Map<String, Object> newSpecificUnit = result.next();
@@ -220,7 +232,7 @@ public class PatternIndexModel {
         if (itd.getAllDeletedNodes().size() != 0 || itd.getAllDeletedRelationships().size() != 0) {
             Set<Long> deletedNodeIDs = handleNodeDelete(itd.getAllDeletedNodes(), itd.getAllDeletedRelationships());
             handleRelationshipDelete(itd.getAllDeletedRelationships(), deletedNodeIDs);
-            deleteEmptyIndexes();
+            DatabaseHandler.deleteEmptyIndexes(database, patternIndexes);
         }
         if (itd.getAllCreatedNodes().size() != 0 || itd.getAllCreatedRelationships().size() != 0) {
             handleCreate(itd.getAllCreatedRelationships());
@@ -263,39 +275,25 @@ public class PatternIndexModel {
                 String matchClause = "MATCH " + patternIndex.getPatternQuery();
                 String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
 
-                Result result = getPatternUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
-                Map<String, PatternIndexUnit> patternUnits = getUniquePatternUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
+                Result result = getPatternIndexUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
+                Map<String, PatternIndexUnit> patternUnits = getUniquePatternIndexUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
 
                 for (PatternIndexUnit patternUnit : patternUnits.values()) {
                     Node indexUnitNode = getPatternIndexUnitForNodes(patternIndex, patternUnit.getNodeIDs());
                     if (indexUnitNode != null) {
-                        Log.info("UPDATING FOR " + indexUnitNode.getId());
                         DatabaseHandler.updatePatternIndexUnit(indexUnitNode, patternUnit);
                         updatedPatternIndexUnits.add(indexUnitNode);
                     } else {
-                        Log.info("CREATING ...");
-                        createPatternUnitNode(patternUnit, patternIndex.getRootNode());
+                        DatabaseHandler.buildNewPatternIndexUnit(database, patternUnit, patternIndex.getRootNode());
                     }
                 }
-                for (Node node : patternIndexUnitsOfNode) {
-                    Log.info("Pattern index unit node: " + node.getId());
-                }
-                for (Node node : updatedPatternIndexUnits) {
-                    Log.info("Updated pattern index unit node: " + node.getId());
-                }
-                //removeNodesFromSet(patternIndexUnitsOfNode, updatedPatternIndexUnits);
 
                 // Because Set.removeAll(Set) does not work on server!
                 for (Node updatedPatternIndexUnit : updatedPatternIndexUnits) {
                     patternIndexUnitsOfNode.remove(updatedPatternIndexUnit);
                 }
-                Log.info("AFTER SET MINUS SET: " + patternIndexUnitsOfNode.size());
+
                 deletePatternIndexUnits(patternIndexUnitsOfNode);
-
-                for (Node node : patternIndexUnitsOfNode) {
-                    Log.info("Pattern index unit node: " + node.getId());
-                }
-
             }
         }
     }
@@ -382,8 +380,10 @@ public class PatternIndexModel {
 
         // if user did not delete META relationships of deleted node -> delete them
         for (Node deletedNode : deletedNodes) {
-            for (Relationship metaRelOfNode : DatabaseHandler.getMetaRelsOfNode(deletedNode)) {
-                deletedRels.add(metaRelOfNode);
+            Iterator itr = deletedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING).iterator();
+            while(itr.hasNext()) {
+                Relationship metaRel = (Relationship) itr.next();
+                metaRel.delete();
             }
         }
 
@@ -446,19 +446,7 @@ public class PatternIndexModel {
         }
     }
 
-    // Method to delete empty pattern index root nodes
-    public void deleteEmptyIndexes() {
-        // loop over pattern indexes
-        for (Map.Entry<String, PatternIndex> entry : patternIndexes.entrySet()) {
-            // if root node of pattern index does not have any relationships
-            if (!entry.getValue().getRootNode().getRelationships(Direction.OUTGOING).iterator().hasNext()) {
-                // remove pattern index
-                patternIndexes.remove(entry.getKey());
-                // delete root node
-                DatabaseHandler.deleteNode(database, entry.getValue().getRootNode());
-            }
-        }
-    }
+
 
 
     public Map<String, PatternIndex> getPatternIndexes() {
