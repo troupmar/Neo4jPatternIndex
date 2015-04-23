@@ -286,12 +286,15 @@ public class PatternIndexModel {
         updateIndexes(affectedNodes);
     }
 
-    // TODO review and debug
-    public void updateIndexes(Set<Node> affectedNodes) {
+    // TODO continue refactoring...
+    // Main method to update index after create and update changes on the database.
+    private void updateIndexes(Set<Node> affectedNodes) {
+        // loop over affected nodes
         for (Node affectedNode : affectedNodes) {
-
+            // get affected node meta relationships
             Iterable<Relationship> affectedNodeMetaRels = affectedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-            Set<Node> patternIndexesUnitsOfNode = getStartNodesForRelationships(affectedNodeMetaRels);
+            // get pattern index units that affected node is connected to across all pattern indexes
+            Set<Node> patternIndexesUnitsOfNode = DatabaseHandler.getStartNodesForRelationships(affectedNodeMetaRels);
 
             for (PatternIndex patternIndex : patternIndexes.values()) {
                 Set<Node> patternIndexUnitsOfNode = getPatternIndexUnitsForIndex(patternIndexesUnitsOfNode, patternIndex);
@@ -318,7 +321,7 @@ public class PatternIndexModel {
                     patternIndexUnitsOfNode.remove(updatedPatternIndexUnit);
                 }
 
-                deletePatternIndexUnits(patternIndexUnitsOfNode);
+                DatabaseHandler.deletePatternIndexUnits(patternIndexUnitsOfNode);
             }
         }
     }
@@ -336,13 +339,13 @@ public class PatternIndexModel {
 
     private Set<Node> getPatternIndexesUnitsForNodes(Long[] nodeIDs) {
         Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-        Set<Node> commonMetaNodes = getStartNodesForRelationships(metaRelsOfNode);
+        Set<Node> commonMetaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
         Set<Node> toDelete = new HashSet<>();
 
         if (nodeIDs.length > 1) {
             for (int i = 1; i < nodeIDs.length; i++) {
                 metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-                Set<Node> metaNodes = getStartNodesForRelationships(metaRelsOfNode);
+                Set<Node> metaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
                 for (Node commonMetaNode : commonMetaNodes) {
                     if (! metaNodes.contains(commonMetaNode)) {
                         toDelete.add(commonMetaNode);
@@ -359,15 +362,6 @@ public class PatternIndexModel {
 
     }
 
-    private Set<Node> getStartNodesForRelationships(Iterable<Relationship> relationships) {
-        Set<Node> startNodes = new HashSet<>();
-        Iterator itr = relationships.iterator();
-        while (itr.hasNext()) {
-            Relationship nextRel = (Relationship) itr.next();
-            startNodes.add(nextRel.getStartNode());
-        }
-        return startNodes;
-    }
 
     private Set<Node> getPatternIndexUnitsForIndex(Set<Node> patternIndexesUnits, PatternIndex patternIndex) {
         Set<Node> patternIndexUnits = new HashSet<>();
@@ -380,26 +374,11 @@ public class PatternIndexModel {
         return patternIndexUnits;
     }
 
-    private void deletePatternIndexUnits(Set<Node> patternIndexUnits) {
-        for (Node patternIndexUnit : patternIndexUnits) {
-            deletePatternIndexUnit(patternIndexUnit);
-        }
-    }
 
-    private void deletePatternIndexUnit(Node patternIndexUnit) {
-        // get all relationships of pattern index unit
-        Iterable<Relationship> patternIndexUnitRels = patternIndexUnit.getRelationships();
-        // delete those relationships
-        for (Relationship patternIndexUnitRel : patternIndexUnitRels) {
-            patternIndexUnitRel.delete();
-        }
-        // delete unit node itself
-        patternIndexUnit.delete();
-    }
 
     /* HANDLE DELETE */
     // Method to update indexes if some nodes are deleted in transaction
-    private HashSet<Long> handleNodeDelete(Collection<Node> deletedNodes, Collection<Relationship> deletedRels) {
+    private Set<Long> handleNodeDelete(Collection<Node> deletedNodes, Collection<Relationship> deletedRels) {
         // Set that contains all deleted node IDs
         HashSet<Long> deletedNodeIDs = new HashSet<>();
 
@@ -450,18 +429,19 @@ public class PatternIndexModel {
                 // if relationship is not between nodes, where at least one of them was deleted in this transaction
                 // - already handled in handleNodeDelete method
                 if (!deletedNodeIDs.contains(startNodeID) && !deletedNodeIDs.contains(endNodeID)) {
-                    // get all META node IDs, that have relationships to both nodes of the relationship to delete
-                    Result result = database.execute("MATCH (a)--(b)--(c) WHERE id(a)=" + startNodeID +
-                            " AND id(c)=" + endNodeID + " AND b:_META_ RETURN id(b)");
-                    // for each of these META node IDs
-                    while (result.hasNext()) {
-                        // get the actual META node - pattern unit node
-                        Node unitNode = database.getNodeById((Long) result.next().get("id(b)"));
+                    // get all pattern index units, that have relationships to both nodes of the relationship to delete
+                    Long[] incidentNodes = new Long[2];
+                    incidentNodes[0] = startNodeID;
+                    incidentNodes[1] = endNodeID;
+                    Set<Node> patternIndexesUnits = getPatternIndexesUnitsForNodes(incidentNodes);
+
+                    // loop over pattern index unit nodes
+                    for (Node patternIndexesUnit : patternIndexesUnits) {
                         // if some specific units (across all pattern indexes) were deleted -> remove them from the pattern unit
                         // if the pattern unit has no more specific units -> remove it
-                        if (DatabaseHandler.updatePatternIndexUnitOnDelete(unitNode, deletedRel.getId()) == 0) {
+                        if (DatabaseHandler.updatePatternIndexUnitOnDelete(patternIndexesUnit, deletedRel.getId()) == 0) {
                             try (Transaction tx = database.beginTx()) {
-                                deletePatternIndexUnit(unitNode);
+                                DatabaseHandler.deletePatternIndexUnit(patternIndexesUnit);
                                 tx.success();
                             }
                         }

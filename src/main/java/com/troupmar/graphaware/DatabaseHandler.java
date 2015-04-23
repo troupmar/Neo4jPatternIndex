@@ -145,4 +145,44 @@ public class DatabaseHandler {
             patternIndexUnitNode.setProperty("specificUnits", PatternIndexUnit.specificUnitsToString(newSpecificUnits));
         }
     }
+
+    /**
+     * Method to return set of start nodes for set of relationships.
+     * @param relationships set of relationships to get start nodes for.
+     * @return
+     */
+    public static Set<Node> getStartNodesForRelationships(Iterable<Relationship> relationships) {
+        Set<Node> startNodes = new LinkedHashSet<>();
+        Iterator itr = relationships.iterator();
+        while (itr.hasNext()) {
+            Relationship nextRel = (Relationship) itr.next();
+            startNodes.add(nextRel.getStartNode());
+        }
+        return startNodes;
+    }
+
+    /**
+     * Method to delete set of pattern index units.
+     * @param patternIndexUnits set of pattern index units to delete.
+     */
+    public static void deletePatternIndexUnits(Set<Node> patternIndexUnits) {
+        for (Node patternIndexUnit : patternIndexUnits) {
+            deletePatternIndexUnit(patternIndexUnit);
+        }
+    }
+
+    /**
+     * Method to delete given pattern index unit. First its relationships must be deleted, then node itself.
+     * @param patternIndexUnit pattern index unit to delete.
+     */
+    public static void deletePatternIndexUnit(Node patternIndexUnit) {
+        // get all relationships of pattern index unit
+        Iterable<Relationship> patternIndexUnitRels = patternIndexUnit.getRelationships();
+        // delete those relationships
+        for (Relationship patternIndexUnitRel : patternIndexUnitRels) {
+            patternIndexUnitRel.delete();
+        }
+        // delete unit node itself
+        patternIndexUnit.delete();
+    }
 }
