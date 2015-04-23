@@ -207,18 +207,23 @@ public class PatternIndexModel {
         return false;
     }
 
-    // TODO continue refactoring
-    // Method to process query result (query to build index on): save node IDs and relationship IDs and reduce automorphism
+    // Method to get unique pattern index units from result. Unique pattern index unit is identified by nodes in pattern.
+    // Instance of PatternIndexUnit keeps all nodes in pattern and all specific units that these nodes carry.
     private Map<String, PatternIndexUnit> getUniquePatternIndexUnits(Result result, Set<String> nodeNames, Set<String> relNames) {
         Map<String, PatternIndexUnit> patternUnits = new HashMap<>();
+        // loop over results - row by row
         while (result.hasNext()) {
             Map<String, Object> newSpecificUnit = result.next();
-            String patternUnitKey = PatternIndexUnit.getPatternUnitKey(newSpecificUnit, nodeNames);
-            if (patternUnits.containsKey(patternUnitKey)) {
-                patternUnits.get(patternUnitKey).addSpecificUnit(newSpecificUnit, relNames);
+            // get pattern index unit key = sorted nodes by id separated by symbol _
+            String patternIndexUnitKey = PatternIndexUnit.getPatternIndexUnitKey(newSpecificUnit, nodeNames);
+            // if pattern index unit already exists
+            if (patternUnits.containsKey(patternIndexUnitKey)) {
+                // update its specific units
+                patternUnits.get(patternIndexUnitKey).addSpecificUnit(newSpecificUnit, relNames);
+            // if pattern index unit does not exist -> create a new one
             } else {
                 PatternIndexUnit patternIndexUnit = new PatternIndexUnit(newSpecificUnit, nodeNames, relNames);
-                patternUnits.put(patternUnitKey, patternIndexUnit);
+                patternUnits.put(patternIndexUnitKey, patternIndexUnit);
             }
         }
         return patternUnits;
@@ -226,38 +231,58 @@ public class PatternIndexModel {
 
 
     /* HANDLE DML OPERATIONS */
-    // Method to handle delete of relationships or nodes in transaction
+
+    /**
+     * Method to handle all DML transactions made on the database. Including deleting nodes and relationships, changing
+     * properties and labels on nodes and relationships and creating new nodes and relationships.
+     * @param itd data that contain all changes on the database.
+     */
     public void handleDML(ImprovedTransactionData itd) {
 
+        // if at least one of nodes or relationships was deleted
         if (itd.getAllDeletedNodes().size() != 0 || itd.getAllDeletedRelationships().size() != 0) {
+            // handle deleted nodes
             Set<Long> deletedNodeIDs = handleNodeDelete(itd.getAllDeletedNodes(), itd.getAllDeletedRelationships());
+            // handle deleted relationships
             handleRelationshipDelete(itd.getAllDeletedRelationships(), deletedNodeIDs);
+            // if some of pattern indexes roots were left empty -> delete them
             DatabaseHandler.deleteEmptyIndexes(database, patternIndexes);
         }
+        // if at least one of nodes or relationships was created
         if (itd.getAllCreatedNodes().size() != 0 || itd.getAllCreatedRelationships().size() != 0) {
+            // handle create
             handleCreate(itd.getAllCreatedRelationships());
         }
+        // if at least one of nodes or relationships was changed (including changing and deleting labels or properties)
         if (itd.getAllChangedNodes().size() != 0 || itd.getAllChangedRelationships().size() != 0) {
+            // handle change
             handleChange(itd.getAllChangedNodes(), itd.getAllChangedRelationships());
         }
     }
 
+    // Method to handle all created nodes and relationships -> only relationships can affect some pattern index though.
     private void handleCreate(Collection<Relationship> createdRels) {
         Set<Node> affectedNodes = new HashSet<>();
+        // get all affected nodes: there are start nodes of created relationships
         for (Relationship createdRel : createdRels) {
             affectedNodes.add(createdRel.getStartNode());
         }
+        // update pattern indexes
         updateIndexes(affectedNodes);
     }
 
+    // Method to handle all changed nodes and relationships
     private void handleChange(Collection<Change<Node>> changedNodes, Collection<Change<Relationship>> changedRels) {
         Set<Node> affectedNodes = new HashSet<>();
+        // get all affected nodes
         for (Change<Node> changedNode : changedNodes) {
             affectedNodes.add(changedNode.getCurrent());
         }
+        // get start nodes of affected relationships
         for (Change<Relationship> changedRel : changedRels) {
             affectedNodes.add(changedRel.getCurrent().getStartNode());
         }
+        // update pattern indexes
         updateIndexes(affectedNodes);
     }
 

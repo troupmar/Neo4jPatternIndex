@@ -37,7 +37,7 @@ public class PatternIndexUnit {
         specificUnits.add(specificUnit);
     }
 
-    public static String getPatternUnitKey(Map<String, Object> newSpecificUnit, Set<String> nodeNames) {
+    public static String getPatternIndexUnitKey(Map<String, Object> newSpecificUnit, Set<String> nodeNames) {
         Set<Long> sortedNodeIDs = new TreeSet<>();
         for (String nodeName : nodeNames) {
             sortedNodeIDs.add((Long) newSpecificUnit.get("id(" + nodeName + ")"));
