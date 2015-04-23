@@ -32,7 +32,7 @@ public class PatternIndexModel {
     /**
      * Singleton method. Creates instance only if it was never created before
      * @param database
-     * @return
+     * @return instance of this class.
      */
     public static PatternIndexModel getInstance(GraphDatabaseService database) {
         if (instance == null) {
@@ -112,7 +112,7 @@ public class PatternIndexModel {
     }
 
     // Method to compose and execute query with single specified node - UNION across all node names and return result
-    public Result getPatternIndexUnitsBySingleNode(String matchClause, String returnClause, Set<String> nodes, Long nodeToQueryID) {
+    private Result getPatternIndexUnitsBySingleNode(String matchClause, String returnClause, Set<String> nodes, Long nodeToQueryID) {
         // build query
         String query = "";
         for (String nodeName : nodes) {
@@ -377,6 +377,7 @@ public class PatternIndexModel {
 
 
     /* HANDLE DELETE */
+
     // Method to update indexes if some nodes are deleted in transaction
     private Set<Long> handleNodeDelete(Collection<Node> deletedNodes, Collection<Relationship> deletedRels) {
         // Set that contains all deleted node IDs
@@ -400,16 +401,16 @@ public class PatternIndexModel {
                 // add deleted node ID to the set
                 deletedNodeIDs.add(deletedNode.getId());
 
-                // get pattern unit node that has relationship to deleted META node
-                Node unitNode = deletedRel.getStartNode();
+                // get pattern index unit node that has relationship to deleted META node
+                Node patternIndexUnit = deletedRel.getStartNode();
                 // get all unit node relationships
-                Iterable<Relationship> unitNodeRels = unitNode.getRelationships();
+                Iterable<Relationship> unitRels = patternIndexUnit.getRelationships();
                 // delete all unit node relationships
-                for (Relationship unitNodeRel : unitNodeRels) {
-                    unitNodeRel.delete();
+                for (Relationship unitRel : unitRels) {
+                    unitRel.delete();
                 }
                 // delete unit node itself
-                unitNode.delete();
+                patternIndexUnit.delete();
             }
         }
 
@@ -452,8 +453,10 @@ public class PatternIndexModel {
     }
 
 
-
-
+    /**
+     * Method to get all pattern indexes within the database.
+     * @return collection of pattern indexes.
+     */
     public Map<String, PatternIndex> getPatternIndexes() {
         return patternIndexes;
     }
