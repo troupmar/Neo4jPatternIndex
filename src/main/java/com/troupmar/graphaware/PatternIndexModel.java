@@ -150,8 +150,6 @@ public class PatternIndexModel {
 
     /* BUILDING INDEX */
 
-    // build new index based on given query
-
     /**
      * Method to build new index based on given query.
      * @param patternQuery instance of PatternQuery, which is parsed MATCH clause of Cypher query for index to be build on.
@@ -260,6 +258,8 @@ public class PatternIndexModel {
         }
     }
 
+    /* HANDLE CREATE AND CHANGE */
+
     // Method to handle all created nodes and relationships -> only relationships can affect some pattern index though.
     private void handleCreate(Collection<Relationship> createdRels) {
         Set<Node> affectedNodes = new HashSet<>();
@@ -286,94 +286,55 @@ public class PatternIndexModel {
         updateIndexes(affectedNodes);
     }
 
-    // TODO continue refactoring...
     // Main method to update index after create and update changes on the database.
     private void updateIndexes(Set<Node> affectedNodes) {
-        // loop over affected nodes
+        // loop over affected nodes (those who where somehow created or changed and those who are incident with changed/created relationships
         for (Node affectedNode : affectedNodes) {
             // get affected node meta relationships
             Iterable<Relationship> affectedNodeMetaRels = affectedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
             // get pattern index units that affected node is connected to across all pattern indexes
             Set<Node> patternIndexesUnitsOfNode = DatabaseHandler.getStartNodesForRelationships(affectedNodeMetaRels);
-
+            // loop over all pattern indexes
             for (PatternIndex patternIndex : patternIndexes.values()) {
-                Set<Node> patternIndexUnitsOfNode = getPatternIndexUnitsForIndex(patternIndexesUnitsOfNode, patternIndex);
+                // get pattern index units for specific pattern index
+                Set<Node> patternIndexUnitsOfNode = DatabaseHandler.getPatternIndexUnitsForIndex(patternIndexesUnitsOfNode, patternIndex);
                 Set<Node> updatedPatternIndexUnits = new HashSet<>();
 
+                // compose query to get all specific units for specific index around affected node (affected node ID is at all node's positions)
                 String matchClause = "MATCH " + patternIndex.getPatternQuery();
                 String returnClause = "RETURN " + composeReturnWithIDsOfNamed(patternIndex.getNodeNames(), patternIndex.getRelNames());
-
+                // finish query and execute
                 Result result = getPatternIndexUnitsBySingleNode(matchClause, returnClause, patternIndex.getNodeNames(), affectedNode.getId());
+                // get unique specific units from result - into PatternIndexUnit instances
                 Map<String, PatternIndexUnit> patternUnits = getUniquePatternIndexUnits(result, patternIndex.getNodeNames(), patternIndex.getRelNames());
-
+                // loop over PatternIndexUnit instances (nodes that represent pattern index unit and hold all specific units)
                 for (PatternIndexUnit patternUnit : patternUnits.values()) {
-                    Node indexUnitNode = getPatternIndexUnitForNodes(patternIndex, patternUnit.getNodeIDs());
+                    // get pattern index unit for nodes that represent it (stored in PatternIndexUnit instance)
+                    Node indexUnitNode = DatabaseHandler.getPatternIndexUnitForNodes(database,patternIndex, patternUnit.getNodeIDs());
+                    // if it does exist (there is a new pattern index unit) -> update pattern index unit
                     if (indexUnitNode != null) {
                         DatabaseHandler.updatePatternIndexUnit(indexUnitNode, patternUnit);
                         updatedPatternIndexUnits.add(indexUnitNode);
+                    // if it does not exist -> create new pattern index unit
                     } else {
                         DatabaseHandler.buildNewPatternIndexUnit(database, patternUnit, patternIndex.getRootNode());
                     }
                 }
 
                 // Because Set.removeAll(Set) does not work on server!
+                // all pattern index units that have connection to affected node minus updated pattern index units
                 for (Node updatedPatternIndexUnit : updatedPatternIndexUnits) {
                     patternIndexUnitsOfNode.remove(updatedPatternIndexUnit);
                 }
-
+                /**
+                 * If some of the pattern index units that have connection to affected node were not updated -> means that
+                 * there were no found specific units for those pattern index units (those pattern index units were created but now
+                 * do not hold any specific units) -> they need to be deleted.
+                 */
                 DatabaseHandler.deletePatternIndexUnits(patternIndexUnitsOfNode);
             }
         }
     }
-
-    private Node getPatternIndexUnitForNodes(PatternIndex patternIndex, Long[] nodeIDs) {
-        Set<Node> commonMetaNodes = getPatternIndexesUnitsForNodes(nodeIDs);
-        for (Node commonMetaNode : commonMetaNodes) {
-            Relationship relToRoot = commonMetaNode.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
-                return commonMetaNode;
-            }
-        }
-        return null;
-    }
-
-    private Set<Node> getPatternIndexesUnitsForNodes(Long[] nodeIDs) {
-        Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-        Set<Node> commonMetaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
-        Set<Node> toDelete = new HashSet<>();
-
-        if (nodeIDs.length > 1) {
-            for (int i = 1; i < nodeIDs.length; i++) {
-                metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-                Set<Node> metaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
-                for (Node commonMetaNode : commonMetaNodes) {
-                    if (! metaNodes.contains(commonMetaNode)) {
-                        toDelete.add(commonMetaNode);
-                    }
-                }
-                // Because Set.removeAll(Set) does not work on server!
-                for (Node singleToDelete : toDelete) {
-                    commonMetaNodes.remove(singleToDelete);
-                }
-                toDelete.clear();
-            }
-        }
-        return commonMetaNodes;
-
-    }
-
-
-    private Set<Node> getPatternIndexUnitsForIndex(Set<Node> patternIndexesUnits, PatternIndex patternIndex) {
-        Set<Node> patternIndexUnits = new HashSet<>();
-        for (Node patternIndexesUnit : patternIndexesUnits) {
-            Relationship relToRoot = patternIndexesUnit.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
-            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
-                patternIndexUnits.add(patternIndexesUnit);
-            }
-        }
-        return patternIndexUnits;
-    }
-
 
 
     /* HANDLE DELETE */
@@ -434,7 +395,7 @@ public class PatternIndexModel {
                     Long[] incidentNodes = new Long[2];
                     incidentNodes[0] = startNodeID;
                     incidentNodes[1] = endNodeID;
-                    Set<Node> patternIndexesUnits = getPatternIndexesUnitsForNodes(incidentNodes);
+                    Set<Node> patternIndexesUnits = DatabaseHandler.getPatternIndexesUnitsForNodes(database, incidentNodes);
 
                     // loop over pattern index unit nodes
                     for (Node patternIndexesUnit : patternIndexesUnits) {
@@ -461,6 +422,7 @@ public class PatternIndexModel {
         return patternIndexes;
     }
 
+    // TODO remove - just for testing
     public void printResult(HashSet<Map<String, Object>> results) {
         System.out.println("Total of " + results.size() + " results:");
         Iterator itr = results.iterator();

@@ -185,4 +185,87 @@ public class DatabaseHandler {
         // delete unit node itself
         patternIndexUnit.delete();
     }
+
+    /**
+     * Method to find all meta nodes, precisely pattern index units for a specific pattern index that have connection
+     * to all given nodes.
+     * @param database database where to look for those pattern index units.
+     * @param patternIndex represent the pattern index, where those found pattern index units should belong to.
+     * @param nodeIDs node IDs to find shared pattern units for.
+     * @return
+     */
+    public static Node getPatternIndexUnitForNodes(GraphDatabaseService database, PatternIndex patternIndex, Long[] nodeIDs) {
+        // get pattern index units across all existing pattern indexes
+        Set<Node> sharedMetaNodes = getPatternIndexesUnitsForNodes(database, nodeIDs);
+        // filter only those who belong to given pattern index by checking if they have relationship to root node of given pattern index
+        for (Node sharedMetaNode : sharedMetaNodes) {
+            Relationship relToRoot = sharedMetaNode.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
+                return sharedMetaNode;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Method to find all meta nodes, precisely pattern index units across all pattern indexes existing in the database
+     * that have connection to all given nodes.
+     * @param database database where to look for those pattern index units.
+     * @param nodeIDs node IDs to find shared pattern units for.
+     * @return
+     */
+    public static Set<Node> getPatternIndexesUnitsForNodes(GraphDatabaseService database, Long[] nodeIDs) {
+        // get all meta relationships of first node from given array of node IDs
+        Iterable<Relationship> metaRelsOfNode = database.getNodeById(nodeIDs[0]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+        // get all pattern index units that first node from given array of node IDs have relationship to
+        Set<Node> sharedMetaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
+        Set<Node> toDelete = new HashSet<>();
+
+        if (nodeIDs.length > 1) {
+            // loop over the rest of node IDs from given array
+            for (int i = 1; i < nodeIDs.length; i++) {
+                // get meta relationships for another node from given array
+                metaRelsOfNode = database.getNodeById(nodeIDs[i]).getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+                // get pattern index units that have relationships to this node
+                Set<Node> metaNodes = DatabaseHandler.getStartNodesForRelationships(metaRelsOfNode);
+                /**
+                 * find shared pattern units with the node before by deleting those that are remaining from the node before but are not shared with
+                 * this new node
+                 */
+                // this new node
+                for (Node sharedMetaNode : sharedMetaNodes) {
+                    if (! metaNodes.contains(sharedMetaNode)) {
+                        toDelete.add(sharedMetaNode);
+                    }
+                }
+                // remaining pattern index units from previous nodes - those that are not shared with this current node
+                // Because Set.removeAll(Set) does not work on server!
+                for (Node singleToDelete : toDelete) {
+                    sharedMetaNodes.remove(singleToDelete);
+                }
+                toDelete.clear();
+            }
+        }
+        return sharedMetaNodes;
+
+    }
+
+    /**
+     * This method accepts a set of pattern index units across all existing pattern indexes and filters those who belong to
+     * pattern index given as parameter.
+     * @param patternIndexesUnits set of pattern index units to be filtered.
+     * @param patternIndex filter parameter - whose pattern index units should be returned.
+     * @return
+     */
+    public static Set<Node> getPatternIndexUnitsForIndex(Set<Node> patternIndexesUnits, PatternIndex patternIndex) {
+        Set<Node> patternIndexUnits = new HashSet<>();
+        for (Node patternIndexesUnit : patternIndexesUnits) {
+            Relationship relToRoot = patternIndexesUnit.getSingleRelationship(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            if (relToRoot.getStartNode().getId() == patternIndex.getRootNode().getId()) {
+                patternIndexUnits.add(patternIndexesUnit);
+            }
+        }
+        return patternIndexUnits;
+    }
+
 }

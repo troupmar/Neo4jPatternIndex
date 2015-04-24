@@ -9,5 +9,6 @@ target/
 *.iws
 *.ipr
 *.db
+*.db.zip
 .DS_Store
 .classpath
