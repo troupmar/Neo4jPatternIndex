@@ -8,6 +8,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * This class provides methods to parse Cypher query. This is a parent class for two classes: PatternQuery - class to process
+ * MATCH clause of Cypher query and CypherQuery - class to process complete Cypher query.
+ * This class holds and provides class variables (names of nodes and relationships that are parsed from
+ * MATCH clause of Cypher query) to classes that extend it.
+ *
+ *
  * Created by Martin on 09.04.15.
  */
 public abstract class QueryParser {
@@ -16,6 +22,8 @@ public abstract class QueryParser {
 
     protected abstract void validateQuery(String cypherQuery, GraphDatabaseService database);
 
+    // Method to check if all relationships in MATCH clause have name. All names of nodes and relationships in Cypher
+    // query must be defined to build index and query on index .
     protected boolean hasValidRelationships(String patternQuery) {
         Pattern pattern = Pattern.compile("(<?-->?)");
         Matcher matcher = pattern.matcher(patternQuery);
@@ -26,6 +34,7 @@ public abstract class QueryParser {
         return true;
     }
 
+    // Method to retrieve names of nodes and relationships from MATCH clause of Cypher query.
     protected void setNamesFromCypherMatch(String patternQuery) throws InvalidCypherMatchException {
         List<String> parsedVars = getParsedCypherMatch(patternQuery);
 
@@ -43,6 +52,7 @@ public abstract class QueryParser {
         }
     }
 
+    // Method to find all nodes and relationships in MATCH clause of Cypher query.
     private List<String> getParsedCypherMatch(String patternQuery) {
         Pattern pattern = Pattern.compile("([^->,][^-<,]+)");
         Matcher matcher = pattern.matcher(patternQuery);
@@ -54,7 +64,8 @@ public abstract class QueryParser {
         return matches;
     }
 
-    protected String getVarName(String item) throws InvalidCypherMatchException {
+    // Method to parse name of node or relationship from found node or relationship in MATCH clause of Cypher query.
+    private String getVarName(String item) throws InvalidCypherMatchException {
         item = item.substring(1).trim();
         if (item.charAt(0) == '{' || item.charAt(0) == ':' || item.charAt(0) == ')' || item.charAt(0) == ']') {
             throw new InvalidCypherMatchException();
@@ -62,7 +73,7 @@ public abstract class QueryParser {
         return parseVarName(item);
     }
 
-    protected String parseVarName(String item) {
+    private String parseVarName(String item) {
         int i = 0;
         while (i<item.length()) {
             if (item.charAt(i) == ' ' || item.charAt(i) == ':' || item.charAt(i) == ')' || item.charAt(i) == ']') {
@@ -81,6 +92,7 @@ public abstract class QueryParser {
         return relNames;
     }
 
+    // Method to transform set of names of nodes or relationships to String -> so it can be stored in pattern index meta nodes in database.
     public static String namesToString(Set<String> names) {
         String namesString = "";
         for (String name : names) {
@@ -88,7 +100,7 @@ public abstract class QueryParser {
         }
         return namesString.substring(0, namesString.length() - 1);
     }
-
+    // // Method to transform String of names of nodes or relationships to set -> so it can be retrieved from pattern index meta nodes in database.
     public static Set<String> namesFromString(String namesString) {
         Set<String> names = new LinkedHashSet<>();
         for (String name : namesString.split(",")) {

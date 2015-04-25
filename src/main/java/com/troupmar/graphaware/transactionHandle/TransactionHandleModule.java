@@ -52,14 +52,11 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
         patternIndexModel = PatternIndexModel.getInstance(database);
     }
 
-    public void writeDownResult(BufferedWriter bufferedWriter, HashSet<Map<String, Object>> results) throws IOException {
-        System.out.println("Total of " + results.size() + " results:");
-        Iterator itr = results.iterator();
-        while (itr.hasNext()) {
-            bufferedWriter.write(itr.next().toString());
-        }
-    }
-
+    /**
+     * Method to check if only meta relationships were created in the transaction. It returns true only if all created relationships
+     * are of type PATTERN_INDEX_RELATION. That means that during that kind of transaction we are building index and nothing should be
+     * done in beforeCommit.
+     */
     private boolean onlyMetaRelsCreated(ImprovedTransactionData improvedTransactionData) {
         Collection<Relationship> createdRels = improvedTransactionData.getAllCreatedRelationships();
         if (createdRels.size() == 0) {

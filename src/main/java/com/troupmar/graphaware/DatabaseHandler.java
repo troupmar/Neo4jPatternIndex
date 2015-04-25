@@ -5,6 +5,9 @@ import org.neo4j.graphdb.*;
 import java.util.*;
 
 /**
+ * This class provides some helper methods to manipulate with data from graph database. Those methods are needed while
+ * working with pattern indexes, such as creating meta nodes etc.
+ *
  * Created by Martin on 12.04.15.
  */
 public class DatabaseHandler {

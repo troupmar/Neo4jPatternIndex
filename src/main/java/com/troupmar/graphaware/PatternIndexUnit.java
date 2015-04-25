@@ -3,15 +3,13 @@ package com.troupmar.graphaware;
 import java.util.*;
 
 /**
- * Created by Martin on 18.04.15.
- */
-
-/**
  * This class represents a pattern index unit. Each pattern index has exactly one pattern index root and a set of those pattern
- * index units. Each pattern index unit is represented by a set of node IDs. Those nodes carry at least
- * one specific unit that satisfy conditions of a pattern for which the pattern index was built. Those node IDs that represent
+ * index units. Each pattern index unit is represented by a set of nodes IDs. Those nodes carry at least
+ * one specific unit that satisfy conditions of a pattern for which the pattern index was built. Those nodes IDs that represent
  * a pattern index unit must differ in at least one of them between other pattern index units.
  * Each pattern index unit also carries all specific units that share those nodes that represent it.
+ *
+ * Created by Martin on 18.04.15.
  */
 public class PatternIndexUnit {
     // node IDs that represent single pattern index unit

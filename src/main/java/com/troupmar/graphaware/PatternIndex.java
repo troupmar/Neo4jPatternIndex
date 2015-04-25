@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * This class represents single pattern index. It holds pattern index name, pattern query, that the index was built on and
+ * its nodes and relationships names. It also holds the root node of the index.
+ *
  * Created by Martin on 05.04.15.
  */
 public class PatternIndex {

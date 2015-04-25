@@ -1,7 +1,6 @@
 package com.troupmar.graphaware;
 
 
-import com.esotericsoftware.minlog.Log;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
@@ -10,6 +9,10 @@ import org.neo4j.graphdb.*;
 import java.util.*;
 
 /**
+ * Main class to control pattern indexes in the database. It includes methods to build a new index based on given graph
+ * pattern, method to query on top of built index and methods to update index during DML operations.
+ * Instance of this class holds all pattern indexes built in the database.
+ *
  * Created by Martin on 05.04.15.
  */
 public class PatternIndexModel {
