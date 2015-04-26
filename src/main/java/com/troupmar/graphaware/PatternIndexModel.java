@@ -1,12 +1,15 @@
 package com.troupmar.graphaware;
 
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Main class to control pattern indexes in the database. It includes methods to build a new index based on given graph
@@ -349,9 +352,8 @@ public class PatternIndexModel {
 
         // if user did not delete META relationships of deleted node -> delete them
         for (Node deletedNode : deletedNodes) {
-            Iterator itr = deletedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING).iterator();
-            while(itr.hasNext()) {
-                Relationship metaRel = (Relationship) itr.next();
+            Iterable<Relationship> metaRels = deletedNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+            for (Relationship metaRel : metaRels) {
                 metaRel.delete();
             }
         }
@@ -425,13 +427,75 @@ public class PatternIndexModel {
         return patternIndexes;
     }
 
-    // TODO remove - just for testing
-    public void printResult(HashSet<Map<String, Object>> results) {
-        System.out.println("Total of " + results.size() + " results:");
-        Iterator itr = results.iterator();
-        while (itr.hasNext()) {
-            System.out.println(itr.next().toString());
+    /**
+     * Method to get number of pattern index units of specified pattern index.
+     * @param patternIndex pattern index to get number of pattern index units from.
+     * @return number of pattern index units in pattern index.
+     */
+    public int getNumOfUnitsInPatternIndex(PatternIndex patternIndex) {
+        int count = 0;
+        try (Transaction tx = database.beginTx()) {
+            Iterable<Relationship> metaRelsFromRoot = patternIndex.getRootNode().getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
+            for (Relationship metaRelFromRoot : metaRelsFromRoot) {
+                count++;
+            }
+            tx.success();
         }
+        return count;
+    }
+
+    /**
+     * Method to remove all pattern indexes from the database.
+     */
+    public void removeAllPatternIndexes() {
+        for (PatternIndex patternIndex : patternIndexes.values()) {
+            removePatternIndex(patternIndex);
+        }
+        System.out.println(patternIndexes.size()+"\n");
+    }
+
+    /**
+     * Method to remove specific pattern index by name from the database.
+     * @param patternIndexName name of the pattern index to be deleted.
+     */
+    public void removePatternIndexByName(String patternIndexName) {
+        if (patternIndexes.containsKey(patternIndexName)) {
+            removePatternIndex(patternIndexes.get(patternIndexName));
+        }
+    }
+
+    // Method to remove specific pattern index from the database.
+    private void removePatternIndex(PatternIndex patternIndex) {
+        try (Transaction tx = database.beginTx()) {
+            Iterable<Relationship> rootMetaRels = patternIndex.getRootNode().getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
+            for (Relationship rootMetaRel : rootMetaRels) {
+                DatabaseHandler.deletePatternIndexUnit(rootMetaRel.getEndNode());
+            }
+            patternIndex.getRootNode().delete();
+            patternIndexes.remove(patternIndex.getPatternName());
+            tx.success();
+        }
+    }
+
+    /**
+     * Method to transform result from database to String.
+     * @param result result from the database.
+     * @param printType String type, either JSON (JSON String) or SOUT (Simple table - for logging).
+     * @return result String.
+     */
+    public String resultToString(HashSet<Map<String, Object>> result, PrintTypes printType) {
+        String resultString = "";
+        if (printType.equals(PrintTypes.SOUT)) {
+            resultString += "Total of " + result.size() + " results: \n";
+            Iterator itr = result.iterator();
+            while (itr.hasNext()) {
+                resultString += itr.next().toString() + "\n";
+            }
+        } else if (printType.equals(PrintTypes.JSON)) {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            resultString = gson.toJson(result);
+        }
+        return resultString;
     }
 
 }

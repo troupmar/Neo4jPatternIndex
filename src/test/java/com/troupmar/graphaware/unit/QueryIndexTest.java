@@ -2,6 +2,7 @@ package com.troupmar.graphaware.unit;
 
 import com.troupmar.graphaware.CypherQuery;
 import com.troupmar.graphaware.PatternIndexModel;
+import com.troupmar.graphaware.PrintTypes;
 import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
@@ -26,8 +27,10 @@ public class QueryIndexTest {
         CypherQuery cypherQuery = new CypherQuery(query, database.getDatabase());
 
         PatternIndexModel model = PatternIndexModel.getInstance(database.getDatabase());
-        HashSet<Map<String, Object>> results = model.getResultFromIndex(cypherQuery, "triangle-index");
-        model.printResult(results);
+        HashSet<Map<String, Object>> result = model.getResultFromIndex(cypherQuery, "triangle-index");
+
+        String resultString = model.resultToString(result, PrintTypes.JSON);
+        System.out.println(resultString);
 
         database.closeDatabase();
     }

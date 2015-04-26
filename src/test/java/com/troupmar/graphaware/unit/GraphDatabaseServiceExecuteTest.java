@@ -88,4 +88,3 @@ public class GraphDatabaseServiceExecuteTest extends DatabaseIntegrationTest {
         assertTrue(triangle.get());
     }
 }
-

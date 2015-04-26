@@ -114,11 +114,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- zip plugin -->
         <dependency>
             <groupId>net.lingala.zip4j</groupId>
             <artifactId>zip4j</artifactId>
             <version>1.3.2</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- JSON encode/decode plugin -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>1.7.1</version>
         </dependency>
 
     </dependencies>

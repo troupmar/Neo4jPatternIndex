@@ -108,7 +108,7 @@ public class DatabaseHandler {
      * Method to update pattern index unit node when a single relationship is deleted.
      * @param patternIndexUnitNode pattern index unit node to be updated.
      * @param deletedRelID ID of deleted relationship.
-     * @return
+     * @return the amount of updated specific units. If the pattern index unit remains the same after update - it returns 0.
      */
     public static int updatePatternIndexUnitOnDelete(Node patternIndexUnitNode, Long deletedRelID) {
         Set<String> specificUnits = PatternIndexUnit.specificUnitsFromString((String) patternIndexUnitNode.getProperty("specificUnits"));
@@ -152,7 +152,7 @@ public class DatabaseHandler {
     /**
      * Method to return set of start nodes for set of relationships.
      * @param relationships set of relationships to get start nodes for.
-     * @return
+     * @return set of start nodes.
      */
     public static Set<Node> getStartNodesForRelationships(Iterable<Relationship> relationships) {
         Set<Node> startNodes = new LinkedHashSet<>();
@@ -195,7 +195,7 @@ public class DatabaseHandler {
      * @param database database where to look for those pattern index units.
      * @param patternIndex represent the pattern index, where those found pattern index units should belong to.
      * @param nodeIDs node IDs to find shared pattern units for.
-     * @return
+     * @return pattern index unit node.
      */
     public static Node getPatternIndexUnitForNodes(GraphDatabaseService database, PatternIndex patternIndex, Long[] nodeIDs) {
         // get pattern index units across all existing pattern indexes
@@ -215,7 +215,7 @@ public class DatabaseHandler {
      * that have connection to all given nodes.
      * @param database database where to look for those pattern index units.
      * @param nodeIDs node IDs to find shared pattern units for.
-     * @return
+     * @return set of pattern index unit nodes.
      */
     public static Set<Node> getPatternIndexesUnitsForNodes(GraphDatabaseService database, Long[] nodeIDs) {
         // get all meta relationships of first node from given array of node IDs
@@ -258,7 +258,7 @@ public class DatabaseHandler {
      * pattern index given as parameter.
      * @param patternIndexesUnits set of pattern index units to be filtered.
      * @param patternIndex filter parameter - whose pattern index units should be returned.
-     * @return
+     * @return set of pattern index unit nodes.
      */
     public static Set<Node> getPatternIndexUnitsForIndex(Set<Node> patternIndexesUnits, PatternIndex patternIndex) {
         Set<Node> patternIndexUnits = new HashSet<>();
