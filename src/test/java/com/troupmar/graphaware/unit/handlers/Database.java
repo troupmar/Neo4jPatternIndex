@@ -1,6 +1,7 @@
 package com.troupmar.graphaware.unit.handlers;
 
 import com.esotericsoftware.minlog.Log;
+import com.graphaware.test.integration.GraphAwareApiTest;
 import net.lingala.zip4j.core.ZipFile;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -15,8 +16,9 @@ import java.io.IOException;
  */
 public class Database {
 
-    public static final String DB_PATH     = "data/graph1-1.db";
-    public static final String DB_ZIP_PATH = DB_PATH + ".zip";
+    public static final String DB_PATH       = "testDb/graph1000-5000.db";
+    public static final String DB_ZIP_PATH   = DB_PATH + ".zip";
+    public static final String DB_TARGET_DIR = "testDb";
 
     private GraphDatabaseService database;
     private TemporaryFolder temporaryFolder;
@@ -37,7 +39,7 @@ public class Database {
     }
 
     private void loadDatabaseFromZipFile(String zipDbPath) {
-        String databasePath = new File(unzipDatabase("data", zipDbPath)).getAbsolutePath();
+        String databasePath = new File(unzipDatabase(DB_TARGET_DIR, zipDbPath)).getAbsolutePath();
         String databaseFile = new File(zipDbPath).getName().replace(".zip", "");
         createDatabase(databasePath + "/" + databaseFile);
     }
@@ -51,6 +53,11 @@ public class Database {
 
     private void createDatabase(String databaseTargetPath) {
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(databaseTargetPath);
+
+        if (this.getClass().getClassLoader().getResource("neo4j-pattern-index.properties") != null) {
+            graphDatabaseBuilder.loadPropertiesFromFile(this.getClass().getClassLoader().getResource("neo4j-pattern-index.properties").getPath());
+        }
+
         database = graphDatabaseBuilder.newGraphDatabase();
     }
 

@@ -483,7 +483,7 @@ public class PatternIndexModel {
      * @param printType String type, either JSON (JSON String) or SOUT (Simple table - for logging).
      * @return result String.
      */
-    public String resultToString(HashSet<Map<String, Object>> result, PrintTypes printType) {
+    public static String resultToString(HashSet<Map<String, Object>> result, PrintTypes printType) {
         String resultString = "";
         if (printType.equals(PrintTypes.SOUT)) {
             resultString += "Total of " + result.size() + " results: \n";

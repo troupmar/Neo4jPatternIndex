@@ -5,6 +5,7 @@ import com.troupmar.graphaware.PatternQuery;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import com.troupmar.graphaware.unit.handlers.Database;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
  * Created by Martin on 19.04.15.
@@ -22,7 +23,6 @@ public class BuildIndexTest {
         PatternIndexModel model = PatternIndexModel.getInstance(database.getDatabase());
         model.buildNewIndex(patternQuery, "triangle-index");
 
-        database.closeDatabase();
     }
 }
 
