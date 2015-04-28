@@ -1,5 +1,6 @@
 package com.troupmar.graphaware.transactionHandle;
 
+import com.esotericsoftware.minlog.Log;
 import com.graphaware.runtime.config.FluentTxDrivenModuleConfiguration;
 import com.graphaware.runtime.config.TxDrivenModuleConfiguration;
 import com.graphaware.runtime.module.BaseTxDrivenModule;
@@ -35,11 +36,9 @@ public class TransactionHandleModule extends BaseTxDrivenModule<Void> {
         return config;
     }
 
-    // TODO DEBUG!!
     @Override
     public Void beforeCommit(ImprovedTransactionData improvedTransactionData) throws DeliberateTransactionRollbackException {
-
-        if (! onlyMetaRelsCreated(improvedTransactionData)) {
+        if (! onlyMetaRelsCreated(improvedTransactionData) && patternIndexModel.getPatternIndexes().size() != 0) {
             patternIndexModel.handleDML(improvedTransactionData);
         }
         return null;

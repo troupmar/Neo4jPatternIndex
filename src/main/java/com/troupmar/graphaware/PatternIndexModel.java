@@ -5,11 +5,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.graphaware.tx.event.improved.api.Change;
 import com.graphaware.tx.event.improved.api.ImprovedTransactionData;
+import com.troupmar.graphaware.exception.PatternIndexAlreadyExistsException;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Main class to control pattern indexes in the database. It includes methods to build a new index based on given graph
@@ -80,7 +80,7 @@ public class PatternIndexModel {
         HashSet<Long> queriedNodeIDs = new HashSet<>();
         // get root node of index to query on
         Node rootNode = patternIndexes.get(patternName).getRootNode();
-
+        int count = 0;
         try (Transaction tx = database.beginTx()) {
             // get root relationships
             Iterable<Relationship> relsToPatternIndexUnits = rootNode.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
@@ -98,6 +98,7 @@ public class PatternIndexModel {
                 Long nodeToQueryID = relsToNodes.iterator().next().getEndNode().getId();
                 // if node was not already queried
                 if (!queriedNodeIDs.contains(nodeToQueryID)) {
+                    count++;
                     // build MATCH clause of the query
                     String matchClause = cypherQuery.getCypherQuery().substring(0, cypherQuery.getInsertPosition());
                     // build RETURN clause of the query
@@ -114,6 +115,7 @@ public class PatternIndexModel {
             }
             tx.success();
         }
+
         return results;
     }
 
@@ -161,7 +163,7 @@ public class PatternIndexModel {
      * @param patternQuery instance of PatternQuery, which is parsed MATCH clause of Cypher query for index to be build on.
      * @param patternName name for new index.
      */
-    public void buildNewIndex(PatternQuery patternQuery, String patternName) {
+    public void buildNewIndex(PatternQuery patternQuery, String patternName) throws PatternIndexAlreadyExistsException {
         // if pattern does not exists yet
         if (!patternIndexExists(patternQuery.getPatternQuery(), patternName)) {
             // compose query
@@ -171,18 +173,15 @@ public class PatternIndexModel {
 
             // execute query
             Result result = database.execute(query);
-            System.out.println("Execution of original query finished!");
             // build index based on query result
             buildIndex(getUniquePatternIndexUnits(result, patternQuery.getNodeNames(), patternQuery.getRelNames()), patternQuery, patternName);
         } else {
-            // TODO inform that index already exists
+            throw new PatternIndexAlreadyExistsException();
         }
     }
 
     // Method to actually create index based on result from query on which index should be built.
     private void buildIndex(Map<String, PatternIndexUnit> patternIndexUnits, PatternQuery patternQuery, String patternName) {
-        System.out.println(patternIndexUnits.size());
-
         try (Transaction tx = database.beginTx()) {
             // create root node of the index
             Node patternRootNode = DatabaseHandler.createNewPatternIndexRoot(database, patternQuery, patternName);

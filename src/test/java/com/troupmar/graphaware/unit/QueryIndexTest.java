@@ -4,8 +4,10 @@ import com.google.gson.Gson;
 import com.troupmar.graphaware.*;
 import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
+import com.troupmar.graphaware.exception.PatternIndexAlreadyExistsException;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.junit.Test;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 
 import java.util.HashSet;
@@ -17,13 +19,20 @@ import static org.junit.Assert.assertEquals;
  * Created by Martin on 27.04.15.
  */
 public class QueryIndexTest extends PatternIndexTest {
+
+    @Override
+    protected String getDatabaseZip() {
+        return "testDb/graph100-120.db.zip";
+    }
+
     @Test
-    public void testCirclePatternWithArrow() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
+    public void testCirclePatternWithArrow()
+            throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException, PatternIndexAlreadyExistsException {
         String query = "MATCH (a)-[f]-(b)-[g]-(c)-[h]-(d)-[i]-(e)-[j]-(a) " +
                 "WHERE NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ AND NOT d:_META_ AND NOT e:_META_ RETURN a,b,c";
         String pattern = "(a)-[f]-(b)-[g]-(c)-[h]-(d)-[i]-(e)-[j]-(a)";
         String indexName = "circle";
-        int expectedResult = 10149;
+        int expectedResult = 5;
 
         createPatternIndex(indexName, pattern, expectedResult);
         getPatternIndex(indexName, query);
@@ -31,12 +40,13 @@ public class QueryIndexTest extends PatternIndexTest {
     }
 
     @Test
-    public void testVPatternWithArrow() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
+    public void testVPatternWithArrow()
+            throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException, PatternIndexAlreadyExistsException {
         String query = "MATCH (a:Female)-[d]->(b:Person)<-[e]-(c:Male) " +
                 "WHERE NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN a,b,c";
         String pattern = "(a)-[d]->(b)<-[e]-(c)";
         String indexName = "VWithArrow";
-        int expectedResult = 12490;
+        int expectedResult = 64;
 
         createPatternIndex(indexName, pattern, expectedResult);
         getPatternIndex(indexName, query);
@@ -44,12 +54,13 @@ public class QueryIndexTest extends PatternIndexTest {
     }
 
     @Test
-    public void testVPattern() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
+    public void testVPattern()
+            throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException, PatternIndexAlreadyExistsException {
         String query = "MATCH (a:Female)-[d]->(b:Person)<-[e]-(c:Male) " +
                 "WHERE NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN a,b,c";
         String pattern = "(a)-[d]-(b)-[e]-(c)";
         String indexName = "V";
-        int expectedResult = 49787;
+        int expectedResult = 272;
 
         createPatternIndex(indexName, pattern, expectedResult);
         getPatternIndex(indexName, query);
@@ -57,12 +68,13 @@ public class QueryIndexTest extends PatternIndexTest {
     }
 
     @Test
-    public void testTrianglePattern() throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException {
+    public void testTrianglePattern()
+            throws InvalidCypherMatchException, InvalidCypherException, PatternIndexNotFoundException, PatternIndexAlreadyExistsException {
         String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) " +
                 "WHERE NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN a,b,c";
         String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
         String indexName = "triangle";
-        int expectedResult = 199;
+        int expectedResult = 4;
 
         createPatternIndex(indexName, pattern, expectedResult);
         getPatternIndex(indexName, query);
@@ -70,36 +82,41 @@ public class QueryIndexTest extends PatternIndexTest {
     }
 
     /* Exceptions */
-    /*
-    @Test(expected = IllegalArgumentException.class)
-    public void blankDefinedRelationshipVariableExceptionPattern() throws InvalidCypherMatchException {
+
+    @Test(expected = InvalidCypherMatchException.class)
+    public void blankDefinedRelationshipVariableException() throws InvalidCypherMatchException, PatternIndexAlreadyExistsException {
         String pattern = "(a)-[]-(b)";
         String indexName = "triangle";
-        int expectedResult = 168;
 
-        createPatternIndex(indexName, pattern, expectedResult);
+        createPatternIndex(indexName, pattern, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noDefinedRelationshipVariableExceptionPattern() throws InvalidCypherMatchException {
+    @Test(expected = InvalidCypherMatchException.class)
+    public void noDefinedRelationshipVariableException() throws InvalidCypherMatchException, PatternIndexAlreadyExistsException {
         String pattern = "(a)--(b)";
         String indexName = "triangle";
-        int expectedResult = 168;
 
-        createPatternIndex(indexName, pattern, expectedResult);
+        createPatternIndex(indexName, pattern, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void blankDefinedNodeVariableExceptionPattern() throws InvalidCypherMatchException {
+    @Test(expected = InvalidCypherMatchException.class)
+     public void blankDefinedNodeVariableException() throws InvalidCypherMatchException, PatternIndexAlreadyExistsException {
         String pattern = "()-[c]-(b)";
         String indexName = "triangle";
-        int expectedResult = 168;
 
-        createPatternIndex(indexName, pattern, expectedResult);
+        createPatternIndex(indexName, pattern, 0);
     }
-    */
 
-    private void createPatternIndex(String indexName, String pattern, int expectedResult) throws InvalidCypherMatchException {
+    @Test(expected = QueryExecutionException.class)
+    public void wrongCypherMatchQueryException() throws InvalidCypherMatchException, PatternIndexAlreadyExistsException {
+        String pattern = "()-[c)-(b)";
+        String indexName = "triangle";
+
+        createPatternIndex(indexName, pattern, 0);
+    }
+
+    private void createPatternIndex(String indexName, String pattern, int expectedResult)
+            throws InvalidCypherMatchException, PatternIndexAlreadyExistsException {
         // get pattern index model instance
         PatternIndexModel model = PatternIndexModel.getInstance(getDatabase());
         // get pattern query instance

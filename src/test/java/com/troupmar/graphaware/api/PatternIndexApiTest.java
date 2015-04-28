@@ -1,28 +1,17 @@
-package com.troupmar.graphaware.unit;
+package com.troupmar.graphaware.api;
 
-import com.esotericsoftware.minlog.Log;
-import com.graphaware.test.integration.DatabaseIntegrationTest;
+import com.graphaware.test.integration.GraphAwareApiTest;
 import com.troupmar.graphaware.PatternIndexModel;
 import com.troupmar.graphaware.handlers.Database;
-import net.lingala.zip4j.core.ZipFile;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-import java.io.File;
-import java.io.IOException;
-
-import static com.graphaware.common.util.DatabaseUtils.registerShutdownHook;
 import static com.graphaware.runtime.RuntimeRegistry.getRuntime;
 
 /**
  * Created by Martin on 27.04.15.
  */
-
-
-public class PatternIndexTest extends DatabaseIntegrationTest {
-
+public class PatternIndexApiTest extends GraphAwareApiTest {
     protected TemporaryFolder temporaryFolder;
 
     protected String getDatabaseZip() {
@@ -32,22 +21,21 @@ public class PatternIndexTest extends DatabaseIntegrationTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        getRuntime(getDatabase()).waitUntilStarted();
     }
 
     @Override
     public void tearDown() throws Exception {
-        PatternIndexModel.destroy();
         super.tearDown();
         Database.removeTemporaryFolder(temporaryFolder);
     }
 
-    /**
-     * Instantiate a database by loading it from zip file.
-     * @return new database.
-     */
+    @Override
     protected GraphDatabaseService createDatabase() {
         temporaryFolder = Database.getNewTemporaryFolder();
-        return Database.loadTemporaryDatabaseFromZipFile(getDatabaseZip(), temporaryFolder, propertiesFile());
+        GraphDatabaseService database = Database.loadTemporaryDatabaseFromZipFile(getDatabaseZip(), temporaryFolder, propertiesFile());
+
+        return database;
     }
 
     @Override
@@ -59,4 +47,8 @@ public class PatternIndexTest extends DatabaseIntegrationTest {
         }
     }
 
+    @Override
+    public String baseUrl() {
+        return super.baseUrl() + "/pattern-index";
+    }
 }
