@@ -6,6 +6,7 @@ import com.troupmar.graphaware.exception.InvalidCypherException;
 import com.troupmar.graphaware.exception.InvalidCypherMatchException;
 import com.troupmar.graphaware.exception.PatternIndexAlreadyExistsException;
 import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
+import com.troupmar.graphaware.handlers.PatternIndexTest;
 import org.junit.Test;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;

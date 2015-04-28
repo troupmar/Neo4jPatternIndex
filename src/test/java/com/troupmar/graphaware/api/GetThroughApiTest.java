@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.graphaware.test.util.TestHttpClient;
 import com.troupmar.graphaware.PatternIndexModel;
+import com.troupmar.graphaware.handlers.PatternIndexApiTest;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.neo4j.graphdb.Result;

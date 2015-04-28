@@ -1,17 +1,28 @@
-package com.troupmar.graphaware.api;
+package com.troupmar.graphaware.handlers;
 
-import com.graphaware.test.integration.GraphAwareApiTest;
+import com.esotericsoftware.minlog.Log;
+import com.graphaware.test.integration.DatabaseIntegrationTest;
 import com.troupmar.graphaware.PatternIndexModel;
 import com.troupmar.graphaware.handlers.Database;
+import net.lingala.zip4j.core.ZipFile;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
+import java.io.File;
+import java.io.IOException;
+
+import static com.graphaware.common.util.DatabaseUtils.registerShutdownHook;
 import static com.graphaware.runtime.RuntimeRegistry.getRuntime;
 
 /**
  * Created by Martin on 27.04.15.
  */
-public class PatternIndexApiTest extends GraphAwareApiTest {
+
+
+public class PatternIndexTest extends DatabaseIntegrationTest {
+
     protected TemporaryFolder temporaryFolder;
 
     protected String getDatabaseZip() {
@@ -21,21 +32,22 @@ public class PatternIndexApiTest extends GraphAwareApiTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        getRuntime(getDatabase()).waitUntilStarted();
     }
 
     @Override
     public void tearDown() throws Exception {
+        PatternIndexModel.destroy();
         super.tearDown();
         Database.removeTemporaryFolder(temporaryFolder);
     }
 
-    @Override
+    /**
+     * Instantiate a database by loading it from zip file.
+     * @return new database.
+     */
     protected GraphDatabaseService createDatabase() {
         temporaryFolder = Database.getNewTemporaryFolder();
-        GraphDatabaseService database = Database.loadTemporaryDatabaseFromZipFile(getDatabaseZip(), temporaryFolder, propertiesFile());
-
-        return database;
+        return Database.loadTemporaryDatabaseFromZipFile(getDatabaseZip(), temporaryFolder, propertiesFile());
     }
 
     @Override
@@ -47,8 +59,4 @@ public class PatternIndexApiTest extends GraphAwareApiTest {
         }
     }
 
-    @Override
-    public String baseUrl() {
-        return super.baseUrl() + "/pattern-index";
-    }
 }

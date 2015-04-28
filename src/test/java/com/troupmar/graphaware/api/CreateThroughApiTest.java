@@ -2,6 +2,7 @@ package com.troupmar.graphaware.api;
 
 import com.graphaware.test.util.TestHttpClient;
 import com.troupmar.graphaware.PatternIndexModel;
+import com.troupmar.graphaware.handlers.PatternIndexApiTest;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 
