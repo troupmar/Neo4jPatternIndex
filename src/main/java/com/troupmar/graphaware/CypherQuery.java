@@ -32,7 +32,7 @@ public class CypherQuery extends QueryParser {
         relNames         = new LinkedHashSet<>();
         this.cypherQuery = cypherQuery;
 
-        validateQuery(cypherQuery, database);
+        //validateQuery(cypherQuery, database);
         if (! hasValidRelationships(cypherQuery)) {
             throw new InvalidCypherException();
         }

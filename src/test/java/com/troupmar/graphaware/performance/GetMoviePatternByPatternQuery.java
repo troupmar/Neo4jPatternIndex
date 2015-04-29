@@ -13,13 +13,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
 
-public class GetTrianglesByPatternQuery implements PerformanceTest {
+public class GetMoviePatternByPatternQuery implements PerformanceTest {
 
-    private final String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) RETURN a, b, c";
-    private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
-    private final String indexName = "triangle-index";
-    private final String GRAPH_SIZE = "10000-50000";
+    private final String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e) RETURN a, b, c, e";
+    private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e)";
+    private final String indexName = "movie-index";
     private PatternIndexModel model;
+    private boolean indexBuilt = false;
 
 
     /**
@@ -27,12 +27,12 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "GetTrianglesByPatternQuery (" + GRAPH_SIZE + ")";
+        return "GetMoviePatternByPatternQuery";
     }
 
     @Override
     public String longName() {
-        return "Pattern query to get all triangles.";
+        return "Pattern query to get all movie patterns.";
     }
 
     /**
@@ -53,7 +53,7 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 50 : 5;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 15 : 3;
     }
 
     /**
@@ -87,12 +87,11 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
         } catch (PatternIndexAlreadyExistsException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
     public String getExistingDatabasePath() {
-        return "testDb/graph" + GRAPH_SIZE + ".db.zip";
+        return "testDb/cineasts_12k_movies_50k_actors.db.zip";
     }
 
     /**

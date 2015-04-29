@@ -95,9 +95,11 @@ public class PatternIndexModel {
                 // get relationships from pattern index unit node to nodes of specific unit
                 relsToNodes = patternIndexUnit.getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
                 // get single node from specific unit
-                Long nodeToQueryID = relsToNodes.iterator().next().getEndNode().getId();
+                Long nodeToQueryID = DatabaseHandler.getMostParticipatedNode(relsToNodes);
+                //DatabaseHandler.getLowestIdOfEndNodes(relsToNodes);
+                //relsToNodes.iterator().next().getEndNode().getId();
                 // if node was not already queried
-                if (!queriedNodeIDs.contains(nodeToQueryID)) {
+                if (! queriedNodeIDs.contains(nodeToQueryID)) {
                     count++;
                     // build MATCH clause of the query
                     String matchClause = cypherQuery.getCypherQuery().substring(0, cypherQuery.getInsertPosition());
@@ -115,7 +117,7 @@ public class PatternIndexModel {
             }
             tx.success();
         }
-
+        System.out.println(count);
         return results;
     }
 

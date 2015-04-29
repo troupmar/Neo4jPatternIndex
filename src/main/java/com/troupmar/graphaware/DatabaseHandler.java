@@ -164,6 +164,37 @@ public class DatabaseHandler {
         return startNodes;
     }
 
+    public static long getLowestIdOfEndNodes(Iterable<Relationship> relationships) {
+        long lowest = Long.MAX_VALUE;
+        Iterator itr = relationships.iterator();
+        while (itr.hasNext()) {
+            Relationship nextRel = (Relationship) itr.next();
+            if (lowest > nextRel.getEndNode().getId()) {
+                lowest = nextRel.getEndNode().getId();
+            }
+        }
+        return lowest;
+    }
+
+    /**
+     * Method accepts set of meta relationships and gets specific unit nodes from them (end nodes) and returns ID of the one
+     * that has the most amount of meta relationships.
+     * @param metaRels set of meta relationships.
+     * @return ID of node with most meta relationships.
+     */
+    public static long getMostParticipatedNode(Iterable<Relationship> metaRels) {
+        int numOfMetaRels = 0;
+        long mostParticipatedNodeId = 0;
+        for (Relationship metaRel : metaRels) {
+            Node endNode = metaRel.getEndNode();
+            if (endNode.getDegree(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING) > numOfMetaRels) {
+                numOfMetaRels = endNode.getDegree(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.INCOMING);
+                mostParticipatedNodeId = endNode.getId();
+            }
+        }
+        return mostParticipatedNodeId;
+    }
+
     /**
      * Method to delete set of pattern index units.
      * @param patternIndexUnits set of pattern index units to delete.

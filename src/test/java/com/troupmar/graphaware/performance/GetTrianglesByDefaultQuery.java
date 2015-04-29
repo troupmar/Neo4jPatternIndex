@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class GetTrianglesByDefaultQuery implements PerformanceTest {
 
-    private final String GRAPH_SIZE = "1000-5000";
+    private final String GRAPH_SIZE = "100000-500000";
 
 
     /**
@@ -34,7 +34,9 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
     @Override
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
-        result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
+        //result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
+        result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
+        //result.add(new ObjectParameter("cache", new NoCache()));
         return result;
     }
 
@@ -44,7 +46,7 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 1 : 1;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 2 : 1;
     }
 
     /**
@@ -52,7 +54,7 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
      */
     @Override
     public int measuredRuns() {
-        return 1;
+        return 2;
     }
 
 
