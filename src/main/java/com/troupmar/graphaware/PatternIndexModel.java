@@ -1,6 +1,7 @@
 package com.troupmar.graphaware;
 
 
+import com.esotericsoftware.minlog.Log;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.graphaware.tx.event.improved.api.Change;
@@ -25,6 +26,9 @@ public class PatternIndexModel {
     private GraphDatabaseService database;
     private Map<String, PatternIndex> patternIndexes;
 
+    // TODO remove
+    public Set<Node> usedIDs;
+
     /* PATTERN INDEX MODEL INIT */
 
     private PatternIndexModel(GraphDatabaseService database) {
@@ -33,6 +37,8 @@ public class PatternIndexModel {
             this.patternIndexes = DatabaseHandler.getPatternIndexes(database);
             tx.success();
         }
+        // TODO remove
+        this.usedIDs = new HashSet<>();
     }
 
     /**
@@ -117,7 +123,7 @@ public class PatternIndexModel {
             }
             tx.success();
         }
-        System.out.println(count);
+        Log.info("Nodes queried: " + count);
         return results;
     }
 
@@ -438,7 +444,8 @@ public class PatternIndexModel {
         try (Transaction tx = database.beginTx()) {
             Iterable<Relationship> metaRelsFromRoot = patternIndex.getRootNode().getRelationships(RelationshipTypes.PATTERN_INDEX_RELATION, Direction.OUTGOING);
             for (Relationship metaRelFromRoot : metaRelsFromRoot) {
-                count++;
+                String specificUnits = (String) metaRelFromRoot.getEndNode().getProperty("specificUnits");
+                count += PatternIndexUnit.specificUnitsFromString(specificUnits).size();
             }
             tx.success();
         }

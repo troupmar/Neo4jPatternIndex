@@ -13,12 +13,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
 
-public class GetTrianglesByPatternQuery implements PerformanceTest {
+public class GetWithPatternIndexTest implements PerformanceTest {
 
-    private final String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) RETURN a, b, c";
-    private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
-    private final String indexName = "triangle-index";
-    private final String GRAPH_SIZE = "10000-50000";
+    // triangle
+    //private final String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a) RETURN a, b, c";
+    //private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
+    //private final String indexName = "triangle-index";
+    //private final String GRAPH_SIZE = "10000-50000";
+    // movie pattern
+    //private final String query = "MATCH (a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e) RETURN a, b, c, e";
+    //private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e)";
+    //private final String indexName = "movie-index";
+    // transaction pattern
+    private final String query = "MATCH (a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b) RETURN a, b, c, d";
+    private final String pattern = "(a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b)";
+    private final String indexName = "transaction-index";
+
     private PatternIndexModel model;
 
 
@@ -27,12 +37,22 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "GetTrianglesByPatternQuery (" + GRAPH_SIZE + ")";
+        // triangle
+        //return "GetTrianglesByPatternQuery (" + GRAPH_SIZE + ")";
+        // movie pattern
+        //return "GetMoviePatternByPatternQuery";
+        // transaction pattern
+        return "GetTransactionPatternByPatternQuery";
     }
 
     @Override
     public String longName() {
-        return "Pattern query to get all triangles.";
+        // triangle
+        //return "Pattern query to get all triangles.";
+        // movie pattern
+        //return "Pattern query to get all movie patterns.";
+        // transaction pattern
+        return "Pattern query to get all transaction patterns.";
     }
 
     /**
@@ -53,7 +73,7 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 50 : 5;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 30 : 1;
     }
 
     /**
@@ -79,6 +99,7 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
         PatternIndexModel.destroy();
         model = PatternIndexModel.getInstance(database);
+        /*
         try {
             PatternQuery patternQuery = new PatternQuery(pattern, database);
             model.buildNewIndex(patternQuery, indexName);
@@ -87,12 +108,18 @@ public class GetTrianglesByPatternQuery implements PerformanceTest {
         } catch (PatternIndexAlreadyExistsException e) {
             e.printStackTrace();
         }
+        */
 
     }
 
     @Override
     public String getExistingDatabasePath() {
-        return "testDb/graph" + GRAPH_SIZE + ".db.zip";
+        // triangle
+        //return "testDb/graph" + GRAPH_SIZE + "-indexed.db.zip";
+        // movie pattern
+        //return "testDb/cineasts_12k_movies_50k_actors-indexed.db.zip";
+        // transaction pattern
+        return "testDb/transactions10k-100k-indexed.db.zip";
     }
 
     /**

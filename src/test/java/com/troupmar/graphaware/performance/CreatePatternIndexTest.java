@@ -13,13 +13,18 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
 
-public class GetMusicPatternByPatternQuery implements PerformanceTest {
-
-    private final String query = "MATCH (a)-[i]->(b)-[j]->(c)-[k]->(d)-[l]->(e)<-[m]-(a) RETURN a, b, c, d, e";
-    private final String pattern = "(a)-[i]->(b)-[j]->(c)-[k]->(d)-[l]->(e)<-[m]-(a)";
-    private final String indexName = "music-index";
+public class CreatePatternIndexTest implements PerformanceTest {
+    // triangle
+    //private final String pattern = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
+    //private final String indexName = "triangle-index";
+    //private final String GRAPH_SIZE = "10000-50000";
+    // movie pattern
+    //private final String pattern = "(a)-[r]-(b)-[s]-(c)-[t]-(a)-[u]-(e)";
+    //private final String indexName = "movie-index";
+    // transaction pattern
+    private final String pattern = "(a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b)";
+    private final String indexName = "transaction-index";
     private PatternIndexModel model;
-    private boolean indexBuilt = false;
 
 
     /**
@@ -27,12 +32,22 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "GetMusicPatternByPatternQuery";
+        // triangle
+        //return "CreateTrianglePatternIndex (" + GRAPH_SIZE + ")";
+        // movie pattern
+        //return "CreateMoviePatternIndex";
+        // transaction pattern
+        return "CreateTransactionPatternIndex";
     }
 
     @Override
     public String longName() {
-        return "Pattern query to get all music patterns.";
+        // triangle
+        //return "Create pattern index for triangle patterns.";
+        // movie pattern
+        //return "Create pattern index for movie patterns.";
+        // transaction pattern
+        return "Create pattern index for transaction patterns.";
     }
 
     /**
@@ -42,7 +57,8 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
         //result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
-        result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
+        result.add(new ObjectParameter("cache", new NoCache()));
+        //result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
         //result.add(new ObjectParameter("cache", new NoCache()));
         return result;
     }
@@ -53,7 +69,7 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 15 : 3;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 0 : 0;
     }
 
     /**
@@ -61,7 +77,7 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
      */
     @Override
     public int measuredRuns() {
-        return 10;
+        return 8;
     }
 
     /**
@@ -79,19 +95,16 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
         PatternIndexModel.destroy();
         model = PatternIndexModel.getInstance(database);
-        try {
-            PatternQuery patternQuery = new PatternQuery(pattern, database);
-            model.buildNewIndex(patternQuery, indexName);
-        } catch (InvalidCypherMatchException e) {
-            e.printStackTrace();
-        } catch (PatternIndexAlreadyExistsException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
     public String getExistingDatabasePath() {
-        return "testDb/graph-music.db.zip";
+        // triangle
+        //return "testDb/graph" + GRAPH_SIZE + ".db.zip";
+        // movie pattern
+        //return "testDb/cineasts_12k_movies_50k_actors.db.zip";
+        // transaction pattern
+        return "testDb/transactions10k-100k.db.zip";
     }
 
     /**
@@ -99,7 +112,7 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
      */
     @Override
     public RebuildDatabase rebuildDatabase() {
-        return RebuildDatabase.AFTER_PARAM_CHANGE;
+        return RebuildDatabase.AFTER_EVERY_RUN;
     }
 
     @Override
@@ -110,14 +123,11 @@ public class GetMusicPatternByPatternQuery implements PerformanceTest {
             @Override
             public void time() {
                 try {
-                    CypherQuery cq = new CypherQuery(query, database);
-                    model.getResultFromIndex(cq, indexName);
-                    // System.out.println(result.size());
-                } catch (InvalidCypherException e) {
-                    e.printStackTrace();
+                    PatternQuery patternQuery = new PatternQuery(pattern, database);
+                    model.buildNewIndex(patternQuery, indexName);
                 } catch (InvalidCypherMatchException e) {
                     e.printStackTrace();
-                } catch (PatternIndexNotFoundException e) {
+                } catch (PatternIndexAlreadyExistsException e) {
                     e.printStackTrace();
                 }
             }

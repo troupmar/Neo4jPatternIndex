@@ -20,11 +20,23 @@ public class BuildIndexTest {
         GraphDatabaseService database = Database.loadDatabaseFromZipFile(Database.DB_ZIP_PATH, null);
 
         // building index
-        String cypherMatch = "(a:Person)-[r]-(b:Person)-[p]-(c:Person)-[q]-(a:Person)";
-        //String cypherMatch = "(a)-[f]-(b)-[g]-(c)-[h]-(d)-[i]-(e)-[j]-(a)";
+        //String cypherMatch = "(a:Person)-[r]-(b:Person)-[p]-(c:Person)-[q]-(a:Person)";
+
+        // triangle
+        String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
+        // movie pattern
+        //String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e)";
+        // transaction pattern
+        //String cypherMatch = "(a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b)";
+
         PatternQuery patternQuery = new PatternQuery(cypherMatch, database);
         PatternIndexModel model = PatternIndexModel.getInstance(database);
+        // triangle
         model.buildNewIndex(patternQuery, "triangle-index");
+        // movie pattern
+        //model.buildNewIndex(patternQuery, "movie-index");
+        // transaction pattern
+        //model.buildNewIndex(patternQuery, "transaction-index");
 
         Database.closeDatabase(database, null);
 

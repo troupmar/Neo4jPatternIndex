@@ -61,7 +61,7 @@ public class QueryIndexTest extends PatternIndexTest {
                 "WHERE NOT a:_META_ AND NOT b:_META_ AND NOT c:_META_ RETURN a,b,c";
         String pattern = "(a)-[d]-(b)-[e]-(c)";
         String indexName = "V";
-        int expectedResult = 272;
+        int expectedResult = 280;
 
         createPatternIndex(indexName, pattern, expectedResult);
         getPatternIndex(indexName, query);

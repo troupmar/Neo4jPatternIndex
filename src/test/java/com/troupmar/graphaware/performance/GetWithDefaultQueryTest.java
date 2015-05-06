@@ -10,9 +10,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class GetTrianglesByDefaultQuery implements PerformanceTest {
+public class GetWithDefaultQueryTest implements PerformanceTest {
 
-    private final String GRAPH_SIZE = "100000-500000";
+    private final String GRAPH_SIZE = "10000-50000";
 
 
     /**
@@ -20,12 +20,22 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
      */
     @Override
     public String shortName() {
-        return "GetTrianglesByDefaultQuery (" + GRAPH_SIZE + ")";
+        // triangle
+        //return "GetTrianglesByDefaultQuery (" + GRAPH_SIZE + ")";
+        // movie pattern
+        //return "GetMoviePatternsWithDefaultQuery";
+        // transaction pattern
+        return "GetTransactionPatternsWithDefaultQuery";
     }
 
     @Override
     public String longName() {
-        return "Cypher query to get all triangles.";
+        // triangle
+        //return "Cypher query to get all triangles.";
+        // movie pattern
+        //return "Cypher query to get all movie patterns.";
+        // transaction pattern
+        return "Cypher query to get all transaction patterns.";
     }
 
     /**
@@ -35,8 +45,8 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
         //result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
-        result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
-        //result.add(new ObjectParameter("cache", new NoCache()));
+        //result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
+        result.add(new ObjectParameter("cache", new HighLevelCache()));
         return result;
     }
 
@@ -46,7 +56,7 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 2 : 1;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 5 : 0;
     }
 
     /**
@@ -54,7 +64,7 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
      */
     @Override
     public int measuredRuns() {
-        return 2;
+        return 1;
     }
 
 
@@ -76,7 +86,13 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
 
     @Override
     public String getExistingDatabasePath() {
-        return "testDb/graph" + GRAPH_SIZE + ".db.zip";
+        // triangle
+        //return "testDb/graph" + GRAPH_SIZE + ".db.zip";
+        // movie pattern
+        //return "testDb/cineasts_12k_movies_50k_actors.db.zip";
+        // transaction pattern
+        //return "testDb/transactions.db.zip";
+        return "testDb/transactions10k-100k.db.zip";
     }
 
     /**
@@ -100,7 +116,14 @@ public class GetTrianglesByDefaultQuery implements PerformanceTest {
         time += TestUtils.time(new TestUtils.Timed() {
             @Override
             public void time() {
-                Result result = database.execute("MATCH (a)--(b)--(c)--(a) RETURN id(a),id(b),id(c)");
+                // triangle
+                //Result result = database.execute("MATCH (a)--(b)--(c)--(a) RETURN id(a),id(b),id(c)");
+                // movie pattern
+                //Result result = database.execute("MATCH (a)--(b)--(c)--(a)--(e) RETURN a, b, c, e");
+                // transaction pattern
+                //Result result = database.execute("MATCH (a)--(b)--(c)--(d)--(e)--(c)--(a)--(d)--(b)--(e)--(a) RETURN a,b,c,d,e");
+                Result result = database.execute("MATCH (a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b) RETURN a, b, c, d");
+
                 while (result.hasNext()) {
                     result.next();
                 }

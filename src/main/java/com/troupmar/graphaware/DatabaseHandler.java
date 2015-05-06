@@ -116,7 +116,7 @@ public class DatabaseHandler {
         boolean delete = false;
         for (String specificUnit : specificUnits) {
             for (String relID : specificUnit.split("_")) {
-                if (Long.valueOf(relID) == deletedRelID) {
+                if (Long.parseLong(relID) == deletedRelID) {
                     delete = true;
                     break;
                 }

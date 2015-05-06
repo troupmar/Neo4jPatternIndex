@@ -19,7 +19,13 @@ import static com.graphaware.runtime.RuntimeRegistry.getRuntime;
 public class Database {
 
     // Example values that can be used.
-    public static final String DB_PATH       = "testDb/graph100-120.db";
+    // triangle DB
+    public static final String DB_PATH       = "testDb/graph10000-50000.db";
+    // movie DB
+    //public static final String DB_PATH       = "testDb/transactions10k-100k.db";
+    // transaction DB
+    //public static final String DB_PATH       = "testDb/transactions10k-100k.db";
+
     public static final String DB_ZIP_PATH   = DB_PATH + ".zip";
 
 

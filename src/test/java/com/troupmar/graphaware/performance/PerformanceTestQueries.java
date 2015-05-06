@@ -14,10 +14,14 @@ public class PerformanceTestQueries extends PerformanceTestSuite {
     @Override
     protected PerformanceTest[] getPerfTests() {
         return new PerformanceTest[]{
-                //new GetTrianglesByDefaultQuery(),
-                //new GetTrianglesByPatternQuery(),
-                //new GetMusicPatternByPatternQuery(),
-                new GetMoviePatternByPatternQuery()
+                //new GetWithDefaultQueryTest(),
+                new GetWithPatternIndexTest(),
+                //new CreatePatternIndexTest(),
+                //new CreateRelationshipInIndexTest(),
+                //new DeleteNodeInIndexTest(),
+                //new DeleteRelationshipInIndexTest(),
+                //new GetTransactionsWithPatternIndexTest(),
+                //new CreateTransactionRelInIndexTest(),
         };
 
 
