@@ -15,10 +15,13 @@ public class PerformanceTestQueries extends PerformanceTestSuite {
     protected PerformanceTest[] getPerfTests() {
         return new PerformanceTest[]{
                 //new GetWithDefaultQueryTest(),
-                new GetWithPatternIndexTest(),
+                //new GetWithPatternIndexTest(),
                 //new CreatePatternIndexTest(),
+                //new CreateRelationshipDefaultTest(),
                 //new CreateRelationshipInIndexTest(),
+                new DeleteNodeDefaultTest(),
                 //new DeleteNodeInIndexTest(),
+                //new DeleteRelationshipDefaultTest(),
                 //new DeleteRelationshipInIndexTest(),
                 //new GetTransactionsWithPatternIndexTest(),
                 //new CreateTransactionRelInIndexTest(),

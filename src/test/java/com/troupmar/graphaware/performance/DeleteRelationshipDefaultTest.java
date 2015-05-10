@@ -2,18 +2,23 @@ package com.troupmar.graphaware.performance;
 
 import com.graphaware.test.performance.*;
 import com.graphaware.test.util.TestUtils;
+import com.troupmar.graphaware.CypherQuery;
+import com.troupmar.graphaware.PatternIndex;
+import com.troupmar.graphaware.PatternIndexModel;
+import com.troupmar.graphaware.PatternQuery;
+import com.troupmar.graphaware.exception.InvalidCypherException;
+import com.troupmar.graphaware.exception.InvalidCypherMatchException;
+import com.troupmar.graphaware.exception.PatternIndexAlreadyExistsException;
+import com.troupmar.graphaware.exception.PatternIndexNotFoundException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class GetWithDefaultQueryTest implements PerformanceTest {
+public class DeleteRelationshipDefaultTest implements PerformanceTest {
 
+    private PatternIndexModel model;
     private final String GRAPH_SIZE = "10000-50000";
-
 
     /**
      * {@inheritDoc}
@@ -21,21 +26,21 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
     @Override
     public String shortName() {
         // triangle
-        return "GetTrianglesByDefaultQuery (" + GRAPH_SIZE + ")";
+        return "DeleteTriangleRelationshipDefaultTest";
         // movie pattern
-        //return "GetMoviePatternsWithDefaultQuery";
+        //return "DeleteMoviePatternRelationshipDefaultTest";
         // transaction pattern
-        //return "GetTransactionPatternsWithDefaultQuery";
+        //return "DeleteTransactionPatternRelationshipDefaultTest";
     }
 
     @Override
     public String longName() {
         // triangle
-        return "Cypher query to get all triangles.";
+        return "Delete relationship from triangle pattern by default.";
         // movie pattern
-        //return "Cypher query to get all movie patterns.";
+        //return "Delete relationship from movie pattern by default.";
         // transaction pattern
-        //return "Cypher query to get all transaction patterns.";
+        //return "Delete relationship from transaction pattern by default.";
     }
 
     /**
@@ -45,10 +50,11 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
         //result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
-        result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
         //result.add(new ObjectParameter("cache", new NoCache()));
         //result.add(new ObjectParameter("cache", new LowLevelCache()));
         //result.add(new ObjectParameter("cache", new HighLevelCache()));
+        result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
+
         return result;
     }
 
@@ -58,7 +64,7 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
      */
     @Override
     public int dryRuns(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 5 : 0;
+        return ((CacheConfiguration) params.get("cache")).needsWarmup() ? 20 : 5;
     }
 
     /**
@@ -66,24 +72,20 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
      */
     @Override
     public int measuredRuns() {
-        return 1;
+        return 8;
     }
 
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Map<String, String> databaseParameters(Map<String, Object> params) {
-        return ((CacheConfiguration) params.get("cache")).addToConfig(Collections.<String, String>emptyMap());
+        Map<String, String> config = ((CacheConfiguration) params.get("cache")).addToConfig(Collections.<String, String>emptyMap());
+        return config;
     }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
-
     }
 
     @Override
@@ -93,7 +95,6 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
         // movie pattern
         //return "testDb/cineasts_12k_movies_50k_actors.db.zip";
         // transaction pattern
-        //return "testDb/transactions.db.zip";
         //return "testDb/transactions10k-100k.db.zip";
     }
 
@@ -105,32 +106,37 @@ public class GetWithDefaultQueryTest implements PerformanceTest {
         return RebuildDatabase.AFTER_PARAM_CHANGE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long run(final GraphDatabaseService database, Map<String, Object> params) {
         long time = 0;
+
+        Result result = database.execute("MATCH (n)-[r]->() RETURN COUNT(r)");
+        System.out.println(result.resultAsString());
 
         time += TestUtils.time(new TestUtils.Timed() {
             @Override
             public void time() {
                 // triangle
-                Result result = database.execute("MATCH (a)--(b)--(c)--(a) RETURN id(a),id(b),id(c)");
+                database.execute("MATCH (n {name: 'Alisha Barnes'})-[r]-(m {name: 'Freddie Blake'}) DELETE r");
                 // movie pattern
-                //Result result = database.execute("MATCH (a)--(b)--(c)--(a)--(e) RETURN a, b, c, e");
+                //database.execute("MATCH (n {login:'adilfulara'})-[r]-(m {login:'maheshksp'}) DELETE r");
                 // transaction pattern
-                //Result result = database.execute("MATCH (a)--(b)--(c)--(d)--(e)--(c)--(a)--(d)--(b)--(e)--(a) RETURN a,b,c,d,e");
-                //Result result = database.execute("MATCH (a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b) RETURN a, b, c, d");
-
-                while (result.hasNext()) {
-                    result.next();
-                }
+                //database.execute("MATCH (n {id:6735})-[r]-(m {id:24}) DELETE r");
             }
         });
+        result = database.execute("MATCH (n)-[r]->() RETURN COUNT(r)");
+        System.out.println(result.resultAsString());
+
+        // triangle
+        database.execute("MATCH (n {name: 'Alisha Barnes'}), (m {name: 'Freddie Blake'}) CREATE (n)-[r:NEW]->(m)");
+        // movie pattern
+        //database.execute("MATCH (n {login:'adilfulara'}), (m {login:'maheshksp'}) CREATE (n)-[r:FRIEND]->(m)");
+        // transaction pattern
+        //database.execute("MATCH (n {id:6735}), (m {id:24}) CREATE (n)-[r:TRANSACTION]->(m)");
+
+        result = database.execute("MATCH (n)-[r]->() RETURN COUNT(r)");
+        System.out.println(result.resultAsString());
+
 
         return time;
     }
