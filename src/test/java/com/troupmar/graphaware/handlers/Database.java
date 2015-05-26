@@ -24,8 +24,8 @@ public class Database {
     // movie DB
     //public static final String DB_PATH       = "testDb/cineasts_12k_movies_50k_actors.db";
     // transaction DB
-    public static final String DB_PATH       = "testDb/transactions10k-100k.db";
-
+    //public static final String DB_PATH       = "testDb/transactions10k-100k.db";
+    public static final String DB_PATH         = "testDb/graph100-500.db";
     public static final String DB_ZIP_PATH   = DB_PATH + ".zip";
 
 
