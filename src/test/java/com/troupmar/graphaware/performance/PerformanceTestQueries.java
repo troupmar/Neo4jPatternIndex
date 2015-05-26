@@ -19,12 +19,14 @@ public class PerformanceTestQueries extends PerformanceTestSuite {
                 //new CreatePatternIndexTest(),
                 //new CreateRelationshipDefaultTest(),
                 //new CreateRelationshipInIndexTest(),
-                new DeleteNodeDefaultTest(),
+                //new DeleteNodeDefaultTest(),
                 //new DeleteNodeInIndexTest(),
                 //new DeleteRelationshipDefaultTest(),
                 //new DeleteRelationshipInIndexTest(),
                 //new GetTransactionsWithPatternIndexTest(),
                 //new CreateTransactionRelInIndexTest(),
+                new ChangeNodeDefaultTest(),
+                new ChangeNodeInIndexTest(),
         };
 
 

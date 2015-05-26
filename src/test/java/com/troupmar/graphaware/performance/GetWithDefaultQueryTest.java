@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class GetWithDefaultQueryTest implements PerformanceTest {
 
-    private final String GRAPH_SIZE = "10000-50000";
+    private final String GRAPH_SIZE = "100000-500000";
 
 
     /**

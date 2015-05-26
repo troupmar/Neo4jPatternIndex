@@ -38,7 +38,7 @@ public class GetThroughApiTest extends PatternIndexApiTest {
         Result queryResult = getDatabase().execute(query);
 
         PatternIndexModel model = PatternIndexModel.getInstance(getDatabase());
-        assertEquals(272, model.getNumOfUnitsInPatternIndex(model.getPatternIndexes().get("reverseV")));
+        assertEquals(280, model.getNumOfUnitsInPatternIndex(model.getPatternIndexes().get("reverseV")));
         assertEquals(1, model.getPatternIndexes().size());
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();

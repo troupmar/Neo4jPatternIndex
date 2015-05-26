@@ -57,7 +57,7 @@ public class CreatePatternIndexTest implements PerformanceTest {
     public List<Parameter> parameters() {
         List<Parameter> result = new LinkedList<>();
         //result.add(new CacheParameter("cache")); //no cache, low-level cache, high-level cache
-        result.add(new ObjectParameter("cache", new NoCache()));
+        result.add(new ObjectParameter("cache", new HighLevelCache()));
         //result.add(new ObjectParameter("cache", new HighLevelCache(), new LowLevelCache(), new NoCache())); //low-level cache, high-level cache
         //result.add(new ObjectParameter("cache", new NoCache()));
         return result;
