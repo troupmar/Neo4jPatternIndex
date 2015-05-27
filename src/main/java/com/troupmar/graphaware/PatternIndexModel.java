@@ -94,6 +94,7 @@ public class PatternIndexModel {
             Iterable<Relationship> relsToNodes;
             Node patternIndexUnit;
 
+            long totalDbHits = 0;
             // go over all relationships from root to pattern index unit nodes
             for (Relationship rel : relsToPatternIndexUnits) {
                 // get pattern unit node
@@ -117,11 +118,13 @@ public class PatternIndexModel {
                     while (result.hasNext()) {
                         results.add(result.next());
                     }
+                    totalDbHits += getTotalDbHitsForQuery(result);
                     // add already queried node to Set, so it is not queried again
                     queriedNodeIDs.add(nodeToQueryID);
                 }
             }
             tx.success();
+            Log.info("Total number of dbHits: " + totalDbHits);
         }
         Log.info("Nodes queried: " + count);
         return results;
@@ -130,7 +133,9 @@ public class PatternIndexModel {
     // Method to compose and execute query with single specified node - UNION across all node names and return result
     private Result getPatternIndexUnitsBySingleNode(String matchClause, String returnClause, Set<String> nodes, Long nodeToQueryID) {
         // build query
-        String query = "";
+        // TODO REMOVE THIS LINE
+        String query = "PROFILE ";
+        //String query = "";
         for (String nodeName : nodes) {
             query += matchClause;
             query += " WHERE id(" + nodeName + ")=" + nodeToQueryID + " AND " + composeMetaProtectWhereCondition(nodes);
@@ -504,6 +509,25 @@ public class PatternIndexModel {
             resultString = gson.toJson(result);
         }
         return resultString;
+    }
+
+    /**
+     * Method to return total number of dbHits for given result of query.
+     * @param result based on query
+     * @return total number of dbHits
+     */
+    private long getTotalDbHitsForQuery(Result result) {
+        long totalDbHits = 0;
+        Stack<ExecutionPlanDescription> stack = new Stack<>();
+        stack.push(result.getExecutionPlanDescription());
+        while (! stack.empty()) {
+            ExecutionPlanDescription planFromStack = stack.pop();
+            totalDbHits += planFromStack.getProfilerStatistics().getDbHits();
+            for (ExecutionPlanDescription childPlan : planFromStack.getChildren()) {
+                stack.push(childPlan);
+            }
+        }
+        return totalDbHits;
     }
 
 }

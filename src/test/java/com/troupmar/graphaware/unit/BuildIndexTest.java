@@ -24,25 +24,25 @@ public class BuildIndexTest {
 
         // triangle
         //String cypherMatch = "(a:Person)-[r]-(b:Person)-[p]-(c:Person)-[q]-(a:Person)";
-        //String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
+        String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)";
         // movie pattern
         //String cypherMatch = "(a:Person)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e)";
         //String cypherMatch = "(a)-[r]-(b)-[p]-(c)-[q]-(a)-[x]-(e)";
         // transaction pattern
-        String cypherMatch = "(a:Cart)-[e]-(b:Cart)-[f]-(c:Cart)-[g]-(a:Cart)-[h]-(d)-[i]-(b:Cart)";
+        //String cypherMatch = "(a:Cart)-[e]-(b:Cart)-[f]-(c:Cart)-[g]-(a:Cart)-[h]-(d)-[i]-(b:Cart)";
         //String cypherMatch = "(a)-[e]-(b)-[f]-(c)-[g]-(a)-[h]-(d)-[i]-(b)";
 
         PatternQuery patternQuery = new PatternQuery(cypherMatch, database);
         PatternIndexModel model = PatternIndexModel.getInstance(database);
         // triangle
-        //model.buildNewIndex(patternQuery, "triangle-index");
-        //PatternIndex patternIndex = model.getPatternIndexes().get("triangle-index");
+        model.buildNewIndex(patternQuery, "triangle-index");
+        PatternIndex patternIndex = model.getPatternIndexes().get("triangle-index");
         // movie pattern
         //model.buildNewIndex(patternQuery, "movie-index");
         //PatternIndex patternIndex = model.getPatternIndexes().get("movie-index");
         // transaction pattern
-        model.buildNewIndex(patternQuery, "transaction-index");
-        PatternIndex patternIndex = model.getPatternIndexes().get("transaction-index");
+        //model.buildNewIndex(patternQuery, "transaction-index");
+        //PatternIndex patternIndex = model.getPatternIndexes().get("transaction-index");
 
         System.out.println("In index: " + model.getNumOfUnitsInPatternIndex(patternIndex) + " pattern units.");
 

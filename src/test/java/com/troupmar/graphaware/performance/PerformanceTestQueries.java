@@ -15,7 +15,7 @@ public class PerformanceTestQueries extends PerformanceTestSuite {
     protected PerformanceTest[] getPerfTests() {
         return new PerformanceTest[]{
                 //new GetWithDefaultQueryTest(),
-                //new GetWithPatternIndexTest(),
+                new GetWithPatternIndexTest(),
                 //new CreatePatternIndexTest(),
                 //new CreateRelationshipDefaultTest(),
                 //new CreateRelationshipInIndexTest(),
@@ -25,8 +25,8 @@ public class PerformanceTestQueries extends PerformanceTestSuite {
                 //new DeleteRelationshipInIndexTest(),
                 //new GetTransactionsWithPatternIndexTest(),
                 //new CreateTransactionRelInIndexTest(),
-                new ChangeNodeDefaultTest(),
-                new ChangeNodeInIndexTest(),
+                //new ChangeNodeDefaultTest(),
+                //new ChangeNodeInIndexTest(),
         };
 
 
