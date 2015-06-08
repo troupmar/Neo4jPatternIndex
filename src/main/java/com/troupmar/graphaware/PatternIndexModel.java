@@ -262,7 +262,7 @@ public class PatternIndexModel {
             // handle deleted relationships
             handleRelationshipDelete(itd.getAllDeletedRelationships(), deletedNodeIDs);
             // if some of pattern indexes roots were left empty -> delete them
-            DatabaseHandler.deleteEmptyIndexes(database, patternIndexes);
+            // DatabaseHandler.deleteEmptyIndexes(database, patternIndexes);
         }
         // if at least one of nodes or relationships was created
         if (itd.getAllCreatedNodes().size() != 0 || itd.getAllCreatedRelationships().size() != 0) {
