@@ -89,7 +89,7 @@ public class DeleteRelationshipInIndexTest implements PerformanceTest {
     @Override
     public void prepareDatabase(GraphDatabaseService database, final Map<String, Object> params) {
 
-        PatternIndexModel.destroy();
+        PatternIndexModel.destroyInstance();
         model = PatternIndexModel.getInstance(database);
     }
 

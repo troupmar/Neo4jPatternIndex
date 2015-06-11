@@ -60,7 +60,7 @@ public class PatternIndexModel {
     /**
      * Method to destroy instance of PatternIndexModel
      */
-    public static void destroy() {
+    public static void destroyInstance() {
         synchronized (mutex) {
             instance = null;
         }

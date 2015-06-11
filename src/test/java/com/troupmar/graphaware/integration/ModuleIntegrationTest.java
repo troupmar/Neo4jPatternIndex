@@ -26,7 +26,7 @@ public class ModuleIntegrationTest extends GraphAwareApiTest {
     public void tearDown() throws Exception {
         super.tearDown();
 
-        PatternIndexModel.destroy();
+        PatternIndexModel.destroyInstance();
     }
 
     @Override

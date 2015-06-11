@@ -36,7 +36,7 @@ public class PatternIndexTest extends DatabaseIntegrationTest {
 
     @Override
     public void tearDown() throws Exception {
-        PatternIndexModel.destroy();
+        PatternIndexModel.destroyInstance();
         super.tearDown();
         Database.removeTemporaryFolder(temporaryFolder);
     }
