@@ -11,4 +11,4 @@ target/
 *.db
 .DS_Store
 .classpath
-*.db.zip
+.db.zip
